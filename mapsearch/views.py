@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.utils import timezone
-from django.http import QueryDict
+from django.http import QueryDict, HttpResponse
 
 from .models import Map
 from .forms import MapForm
@@ -117,6 +117,44 @@ def map_view(request, pk, tab=None):
     return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'form':mappform, 'tab':tab})
 
 
+### 
+
+def map_download_georef(request, pk):
+    import subprocess
+    import codecs
+    import io
+    import json
+
+    # find map
+    mapp = Map.objects.get(pk=pk)
+
+    # set args
+    args = ["C:\Python27-64\python.exe", # python version
+            r"C:\Users\kimok\OneDrive\Documents\GitHub\mapsearch_site\mapsearch\warp server.py", # georef program
+            mapp.url, # georef url
+            mapp.transform] # transform
+    #print(args)
+    p = subprocess.run(args,
+                       capture_output=True,
+                       )
+    print('returncode')
+    print(repr(p.returncode))
+    #print('raw errors', p.stderr)
+    raw = p.stdout
+    #print('raw out', p.stdout)
+    res = json.loads(raw)
+    res['warping']['image'] = base64.b64decode(res['warping']['image'])
+    #fobj = io.BytesIO()
+    #fobj.write(res['warping']['image'])
+    #res['warping']['image'] = Image.open(fobj)
+    #print('as json', res)
+    #res['warping']['image'].show()
+
+    # return
+    resp = HttpResponse(res['warping']['image'], content_type='image/png') 
+    resp['Content-Disposition'] = 'attachment; filename=warped.png'
+    return resp
+
 def map_auto_georef(request, pk):
     import subprocess
     import codecs
@@ -147,9 +185,12 @@ def map_auto_georef(request, pk):
 
     # set results of map instance
     mapp.georeferenced = timezone.now()
-    mapp.layout = res.get('segmentation', None)
-    mapp.gcps = res.get('gcps_final', None)
-    mapp.transform = res.get('transform_estimation', None)
+    if res.get('segmentation'):
+        mapp.layout = json.dumps(res.get('segmentation'))
+    if res.get('gcps_final'):
+        mapp.gcps = json.dumps(res.get('gcps_final'))
+    if res.get('transform_estimation'):
+        mapp.transform = json.dumps(res.get('transform_estimation'))
 
     # calc footprint
     # ... 

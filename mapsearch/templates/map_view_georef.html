@@ -19,7 +19,12 @@
 			{% endif %}
 		</td>
 		<td></td>
-		<td></td>
+		<td>{% if form.transform.value %}
+				<a href="{% url 'map_download_georef' map.pk %}" class="btn btn-primary">
+					Download Georeferenced
+				</a>
+			{% endif %}
+		</td>
 		<td>
 			<a href="{% url 'map_auto_georef' map.pk %}" class="btn btn-primary">
 			{% if form.georeferenced.value %}
@@ -37,15 +42,15 @@
 <div class="alert alert-info" role="alert">
 <table style="width:100%">
 	<tr>
-		<td style="font-weight: bold;">Transform:</td>
+		<td style="font-weight: bold; vertical-align:top">Transform:</td>
 		<td>{{ form.transform }}</td>
 	</tr>
 	<tr>
-		<td style="font-weight: bold;">Control Points:</td>
+		<td style="font-weight: bold; vertical-align:top">Control Points:</td>
 		<td>{{ form.gcps }}</td>
 	</tr>
 	<tr>
-		<td style="font-weight: bold;">Layout:</td>
+		<td style="font-weight: bold; vertical-align:top">Layout:</td>
 		<td>{{ form.layout }}</td>
 	</tr>
 </table>
