@@ -9,23 +9,35 @@
 
 <br>
 
-<a href="" class="btn btn-danger">
-Delete
-</a>
+<table style="width:100%; table-layout: fixed;">
+	<tr>
+		<td style="font-weight: bold;">Date Indexed:</td>
+		<td>{{ map.created }}</td>
+		<td></td>
+		<td></td>
+		<td>
+			<a href="{% url 'map_update_about' map.pk %}" class="btn btn-primary">
+			Update Info
+			</a>
+		</td>
+	</tr>
+</table>
 
 <br><br>
 
 <div class="alert alert-info" role="alert">
 <table style="width:100%">
 	<tr>
-		<td style="font-weight: bold;">URL:</td>
+		<td style="font-weight: bold; padding:5px">URL:</td>
 		<td><a href={{ map.url }}>{{ map.url }}</a></td>
 	</tr>
 </table>
 </div> 
 
 <div>
-	<img src={{ map.url }} style="max-width:100%; max-height:auto">
+	<img src={{ map.url }} style="max-width:100%; max-height:auto; display:block; margin-left:auto; margin-right:auto">
 </div>
+
+<br><br>
 
 {% endblock %}

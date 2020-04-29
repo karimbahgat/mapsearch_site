@@ -9,7 +9,7 @@
 
 <br>
 
-<table style="width:100%">
+<table style="width:100%; table-layout: fixed;">
 	<tr>
 		<td style="font-weight: bold;">Last Georeferenced:</td>
 		<td>{% if form.georeferenced.value %}
@@ -18,9 +18,15 @@
 				Never
 			{% endif %}
 		</td>
+		<td></td>
+		<td></td>
 		<td>
 			<a href="{% url 'map_auto_georef' map.pk %}" class="btn btn-primary">
-			Auto Detect
+			{% if form.georeferenced.value %}
+				Run Again
+			{% else %}
+				Auto Detect
+			{% endif %}
 			</a>
 		</td>
 	</tr>

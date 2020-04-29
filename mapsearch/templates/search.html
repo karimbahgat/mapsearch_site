@@ -42,88 +42,40 @@ Search the Internet for Maps
 
 <br>
 
-{% if result.count %}
+<div id="recent_maps" style="margin-left:5%; width:75%">
 
-<div id="results_div">
+	<h4>
+	Recently Indexed Maps:
+	</h4>
 
-	<h5>
-	Search Results
-	{% if result.count > 100 %}
-		(First {{ result.matches|length }} of {{ result.count }}):
-	{% elif result.count %}
-		({{ result.count }}):
-	{% endif %}
-	</h5>
-	
-	<div class="table-striped table-hover table-responsive">
-	  <table class="table">
-		<thead>
-		  <tr>
-			<th>Name</th>
-			<th>Code</th>
-			<th>Class</th>
-			<th>Gazetteer</th>
-			<th>Time Period</th>
-			<th>Match</th>
-			<th></th>
-		  </tr>
-		</thead>
-		<tbody>
-	    {% for match in result.matches %}
-			<tr>
-				<td>
-				{% for name in match.item.names %}
-					{{ name.name }}
-					{% if not forloop.last %} | {% endif %}
-				{% endfor %}
-				</td>
-				
-				<td>
-				{% for code in match.item.codes %}
-					{{ code.code }}
-					{% if not forloop.last %} | {% endif %}
-				{% endfor %}
-				</td>
-				
-				<td>
-				{% for classification in match.item.classes %}
-					{{ classification.classification }}
-					{% if not forloop.last %} | {% endif %}
-				{% endfor %}
-				</td>
-				
-				<td>
-				{{ match.item.gazetteer.name }}
-				</td>
-				
-				<td>
-				{{ match.item.timeperiod.start }} - {{ match.item.timeperiod.end }}
-				</td>
-
-				<td>
-				{{ match.match_score_name|stringformat:".2f" }}
-				</td>
-				
-				<td>
-					<button onclick="document.getElementById('intersects').value = {{ match.item.id }}; document.getElementById('search_form').submit();" class="btn btn-secondary glyphicon glyphicon-plus">
-					</button>
-					
-					<a href="{% url 'entry_detail' match.item.gazetteer.id match.item.id %}" class="btn btn-secondary glyphicon glyphicon-share-alt">
+	<div class="row">
+	{% for mapp in recent_maps %}
+		<div class="col-sm-3" style="padding-bottom:10px">
+			<a href="{% url 'map_view' mapp.obj.pk %}">
+			<div class="card sm-3">
+				{% if mapp.thumb %}
+					<img class="card-img-top" src="{{ mapp.thumb }}" style="width:80px; height:70px; display:block; margin:auto; margin-top:20px">
+				{% else %}
+					<img class="card-img-top" src="https://www.pinclipart.com/picdir/big/79-797480_markers-clipart-whiteboard-marker-map-icon-png-black.png" style="width:50%; display:block; margin:auto; margin-top:20px">
+				{% endif %}
+				<div class="card-body">
+					<h5 class="card-title"></h5>
+					<p class="card-text"></p>
+					<div style="text-align:center">
+					<a href="{% url 'map_view' mapp.obj.pk %}"
+					   class="btn btn-primary">
+						View
 					</a>
-				</td>
-			</tr>
+					</div>
+				</div>
+			</div>
+			</a>
+		</div>
 		{% endfor %}
-		<tbody>
-	  </table>
 	</div>
+	
+<br><br>
 
 </div>
-
-{% else %}
-
-	<h5>
-	</h5>
-	
-{% endif %}
 	
 {% endblock %}
