@@ -1,0 +1,30 @@
+
+{% extends "templates/base.html" %}
+{% load static %}
+
+{% block page_content %}
+
+<link href="//netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+
+<h1>Map: {{ map.pk }}</h1>
+
+<ul class="nav nav-tabs">
+	<li {% if tab == 'about' %} class="active" {% endif %}>
+		<a class="nav-link" href="{% url 'map_view' map.pk 'about' %}">About</a>
+	</li>
+	<li {% if tab == 'georef' %} class="active" {% endif %}>
+		<a class="nav-link" href="{% url 'map_view' map.pk 'georef' %}">Georeferenced</a>
+	</li>
+	<li {% if tab == 'digi' %} class="active" {% endif %}>
+		<a class="nav-link" href="{% url 'map_view' map.pk 'digi' %}">Digitized</a>
+	</li>
+	<li {% if tab == 'text' %} class="active" {% endif %}>
+		<a class="nav-link" href="{% url 'map_view' map.pk 'text' %}">Text</a>
+	</li>
+</ul>
+
+<div class="container">
+    {% block tab_content %}{% endblock %}
+</div>
+
+{% endblock %}

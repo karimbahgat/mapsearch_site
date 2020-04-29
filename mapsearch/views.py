@@ -56,10 +56,17 @@ def search(request):
     else:
         return render(request, 'templates/search.html', {})
 
-def map_view(request, pk):
+def map_view(request, pk, tab=None):
     mapp = Map.objects.get(pk=pk)
-    return render(request, 'templates/map_view.html', {'map':mapp})
+    tab = tab or 'about'
+    return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'tab':tab})
 
+##def map_view(request, pk):
+##    return redirect('map_view_about', pk)
+##
+##def map_view_about(request, pk):
+##    mapp = Map.objects.get(pk=pk)
+##    return render(request, 'templates/map_view_about.html', {'map':mapp})
 
 
 
