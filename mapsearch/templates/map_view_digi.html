@@ -11,7 +11,7 @@
 
 <table style="width:100%; table-layout: fixed;">
 	<tr>
-		<td style="font-weight: bold;">Last Georeferenced:</td>
+		<td style="font-weight: bold;">Last Digitized:</td>
 		<td>{% if form.georeferenced.value %}
 				{{ form.georeferenced.value }}
 			{% else %}
@@ -19,14 +19,9 @@
 			{% endif %}
 		</td>
 		<td></td>
-		<td>{% if form.transform.value %}
-				<a href="{% url 'map_download_georef' map.pk %}" class="btn btn-primary">
-					Download Georeferenced
-				</a>
-			{% endif %}
-		</td>
+		<td></td>
 		<td>
-			<a href="{% url 'map_auto_georef' map.pk %}" class="btn btn-primary">
+			<a href="" class="btn btn-primary">
 			{% if form.georeferenced.value %}
 				Run Again
 			{% else %}
@@ -42,12 +37,8 @@
 <div class="alert alert-info" role="alert">
 <table style="width:100%">
 	<tr>
-		<td style="font-weight: bold; vertical-align:top">Transform:</td>
-		<td>{{ form.transform }}</td>
-	</tr>
-	<tr>
-		<td style="font-weight: bold; vertical-align:top">Control Points:</td>
-		<td>{{ form.gcps }}</td>
+		<td style="font-weight: bold; vertical-align:top">Layout:</td>
+		<td>{{ form.layout }}</td>
 	</tr>
 </table>
 </div> 
