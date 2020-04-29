@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
+from django.utils import timezone
 
 from .models import Map
+from .forms import MapForm
 
 # Create your views here.
 
@@ -13,7 +15,7 @@ def search(request):
             # check if already exists in db
             matches = Map.objects.filter(url=dct['search'])
             mapp = matches[0] if matches else None
-            if 1:#mapp is None:
+            if mapp is None:
                 # download image
                 # ...
 
@@ -21,30 +23,10 @@ def search(request):
                 # ...
                 
                 # add to db
-                #mapp = Map.objects.create(url=dct['search'])
+                mapp = Map.objects.create(url=dct['search'])
                 
                 # process map in background
-                import subprocess
-                import codecs
-                import io
-                import json
-                args = ["C:\Python27-64\python.exe", # python version
-                        r"C:\Users\kimok\OneDrive\Documents\GitHub\mapsearch_site\mapsearch\taag server.py", # georef program
-                        dct['search']] # georef url
-                #results = codecs.getwriter('utf8')(io.BytesIO()) #io.BytesIO()
-                #errors = codecs.getwriter('utf8')(io.BytesIO())
-                p = subprocess.run(args,
-                                   capture_output=True,
-                                   #stdout=results, # capture final json output bytes
-                                   #stderr=errors) # ignore warnings+errors
-                                   )
-                print('returncode')
-                print(repr(p.returncode))
-                print('raw errors', p.stderr)
-                raw = p.stdout
-                print('raw result string', raw)
-                js = json.loads(raw)
-                print('as json', js)
+                # ...
                 
             # link to the map view
             return redirect('map_view', mapp.pk)
@@ -58,15 +40,51 @@ def search(request):
 
 def map_view(request, pk, tab=None):
     mapp = Map.objects.get(pk=pk)
+    mappform = MapForm(instance=mapp)
     tab = tab or 'about'
-    return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'tab':tab})
+    return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'form':mappform, 'tab':tab})
 
-##def map_view(request, pk):
-##    return redirect('map_view_about', pk)
-##
-##def map_view_about(request, pk):
-##    mapp = Map.objects.get(pk=pk)
-##    return render(request, 'templates/map_view_about.html', {'map':mapp})
+def map_auto_georef(request, pk):
+    import subprocess
+    import codecs
+    import io
+    import json
 
+    # find map
+    mapp = Map.objects.get(pk=pk)
+
+    # set args
+    args = ["C:\Python27-64\python.exe", # python version
+            r"C:\Users\kimok\OneDrive\Documents\GitHub\mapsearch_site\mapsearch\taag server.py", # georef program
+            mapp.url] # georef url
+    #results = codecs.getwriter('utf8')(io.BytesIO()) #io.BytesIO()
+    #errors = codecs.getwriter('utf8')(io.BytesIO())
+    p = subprocess.run(args,
+                       capture_output=True,
+                       #stdout=results, # capture final json output bytes
+                       #stderr=errors) # ignore warnings+errors
+                       )
+    print('returncode')
+    print(repr(p.returncode))
+    print('raw errors', p.stderr)
+    raw = p.stdout
+    print('raw result string', raw)
+    res = json.loads(raw)
+    print('as json', res)
+
+    # set results of map instance
+    mapp.georeferenced = timezone.now()
+    mapp.layout = res.get('segmentation', None)
+    mapp.gcps = res.get('gcps_final', None)
+    mapp.transform = res.get('transform_estimation', None)
+
+    # calc footprint
+    # ... 
+
+    # save
+    mapp.save()
+
+    # redirect
+    return redirect('map_view', mapp.pk, 'georef')
 
 

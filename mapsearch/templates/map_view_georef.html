@@ -9,23 +9,40 @@
 
 <br>
 
-<a href="" class="btn btn-danger">
-Delete
-</a>
+<table style="width:100%">
+	<tr>
+		<td style="font-weight: bold;">Last Georeferenced:</td>
+		<td>{% if form.georeferenced.value %}
+				{{ form.georeferenced.value }}
+			{% else %}
+				Never
+			{% endif %}
+		</td>
+		<td>
+			<a href="{% url 'map_auto_georef' map.pk %}" class="btn btn-primary">
+			Auto Detect
+			</a>
+		</td>
+	</tr>
+</table>
 
 <br><br>
 
 <div class="alert alert-info" role="alert">
 <table style="width:100%">
 	<tr>
-		<td style="font-weight: bold;">URL:</td>
-		<td><a href={{ map.url }}>{{ map.url }}</a></td>
+		<td style="font-weight: bold;">Transform:</td>
+		<td>{{ form.transform }}</td>
+	</tr>
+	<tr>
+		<td style="font-weight: bold;">Control Points:</td>
+		<td>{{ form.gcps }}</td>
+	</tr>
+	<tr>
+		<td style="font-weight: bold;">Layout:</td>
+		<td>{{ form.layout }}</td>
 	</tr>
 </table>
 </div> 
-
-<div>
-	<img src={{ map.url }} style="max-width:100%; max-height:auto">
-</div>
 
 {% endblock %}
