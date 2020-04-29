@@ -4,3 +4,5 @@ from django.db import models
 
 class Map(models.Model):
     url = models.URLField(blank=True)
+    thumbnail = models.BinaryField(blank=True)
+

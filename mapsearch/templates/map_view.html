@@ -1,0 +1,31 @@
+
+{% extends "templates/base.html" %}
+{% load static %}
+
+{% block page_content %}
+
+<link href="//netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+
+<h1>Map: {{ map.pk }}</h1>
+
+<a href="" class="btn btn-danger">
+Delete
+</a>
+
+<br><br>
+
+<div class="alert alert-info" role="alert">
+<table style="width:100%">
+	<tr>
+		<td style="font-weight: bold;">URL:</td>
+		<td><a href={{ map.url }}>{{ map.url }}</a></td>
+	</tr>
+</table>
+</div> 
+
+<div>
+	<img src={{ map.url }} style="max-width:100%; max-height:auto">
+</div>
+	
+
+{% endblock %}
