@@ -42,8 +42,8 @@ INSTALLED_APPS = [
     'mapsearch.apps.MapsearchConfig',
 
     # dependencies
-    #'djgeojson',
-    #'leaflet',
+    'djgeojson',
+    'leaflet',
 ]
 
 #GDAL_LIBRARY_PATH = 'fjdslkfjs'

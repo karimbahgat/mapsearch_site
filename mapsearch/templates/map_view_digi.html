@@ -2,6 +2,8 @@
 {% extends "templates/map_view_base.html" %}
 {% load static %}
 
+{% load leaflet_tags %}
+{% load geojson_tags %}
 
 {% block tab_content %}
 
@@ -33,6 +35,52 @@
 </table>
 
 <br><br>
+
+<div id="map_div">
+	{% block extra_assets %}
+	  {% leaflet_css %}
+	  {% leaflet_js %}
+	{% endblock %}
+
+	<script type="text/javascript">
+	
+	  var layout = {{ form.layout.value|safe }};
+	  
+	  function map_init(map, options) {
+		  // set to pixel crs
+		  map.options.crs = L.CRS.Simple;
+		  map.options.crs.transformation = new L.Transformation(1, 0, 1, 0);
+		  map.options.maxBounds = null;
+		  map.options.minZoom = -10; 
+		  
+		  // add image overlay
+		  var imageBounds = [[0,0], [1000,1100]];
+		  var imageUrl = '{{ form.url.value }}';
+		  var imglyr = L.imageOverlay(imageUrl, imageBounds);
+		  imglyr.addTo(map);
+		  		  
+		  // add layout layer
+		  var layoutlyr = L.geoJson(layout, {}).addTo(map);
+		  
+		  // layers control
+		  L.control.layers({'Map':imglyr}, {'Layout':layoutlyr}, {collapsed:false}).addTo(map);
+		  
+		  // zoom to extent
+		  map.fitBounds(imageBounds);
+		  
+		  // zoom and pan behavior
+		  map.options.zoomSnap = 0;
+		  //map.options.zoomDelta = 10;
+		  map.options.wheelPxPerZoomLevel = 40; //40
+		  map.options.wheelDebounceTime = 80; //60
+		  map.options.maxBoundsViscosity = 1;
+	  }
+	</script>
+
+	{% leaflet_map "search_map" callback="window.map_init" %}
+</div>
+
+<br>
 
 <div class="alert alert-info" role="alert">
 <table style="width:100%">
