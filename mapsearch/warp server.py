@@ -21,6 +21,34 @@ def warp_map(kwargs):
     fobj = io.BytesIO(urllib.urlopen(url).read())
     img = Image.open(fobj)
     print img
+
+    # if subsampling
+    maxdim = kwargs.pop('maxdim', None)
+    if maxdim:
+        longest = max(img.size)
+        ratio = maxdim  / float(longest)
+        if ratio < 1:
+            # img is larger than maxdim
+            # resize
+            nw,nh = int(img.size[0]*ratio), int(img.size[1]*ratio)
+            img = img.resize((nw,nh), Image.ANTIALIAS)
+            print('downsized',img)
+            # chain resize transform with existing transform
+            transinfo = kwargs['priors']['transinfo']
+            small2big = mapfit.transforms.Polynomial(order=1,
+                                                     A=[[1/ratio,0,0],
+                                                        [0,1/ratio,0],
+                                                        [0,0,1]],
+                                                     ).info()
+            transinfo['forward']['model'] = {'type':'Chain', 'params':{}, 'data':{'transforms':[small2big, transinfo['forward']['model']]} }
+            big2small = mapfit.transforms.Polynomial(order=1,
+                                                     A=[[ratio,0,0],
+                                                        [0,ratio,0],
+                                                        [0,0,1]],
+                                                     ).info()
+            transinfo['backward']['model'] = {'type':'Chain', 'params':{}, 'data':{'transforms':[transinfo['backward']['model'], big2small]} }
+            print(transinfo)
+            kwargs['priors']['transinfo'] = transinfo
   
     # set params
     params = kwargs
@@ -44,11 +72,14 @@ if __name__ == '__main__':
     kwargs = {'url':url,
               'priors':{'transinfo':trans},
               }
+    if len(sys.argv) > 3:
+        maxdim = sys.argv[3]
+        kwargs['maxdim'] = maxdim
     print(kwargs)
 
     # run
     result = warp_map(kwargs)
-    print(result)
+    #print(result)
 
     # get image file as bytes
     fobj = io.BytesIO()

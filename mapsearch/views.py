@@ -148,7 +148,7 @@ def map_add(request):
     size = img.size[0] * scale, img.size[1] * scale
     img.thumbnail(size)
     print(img)
-
+    # encode to png bytestring
     fobj = io.BytesIO()
     img.save(fobj, "PNG")
     raw = base64.b64encode(fobj.getvalue())
@@ -174,6 +174,11 @@ def map_update_about(request, pk):
     img = Image.open(fobj)
     print(img)
 
+    # edit
+    w,h = img.size
+    mapp.width = w
+    mapp.height = h
+
     # create thumbnail
     max_size = 150
     longest = max(img.size)
@@ -181,7 +186,7 @@ def map_update_about(request, pk):
     size = img.size[0] * scale, img.size[1] * scale
     img.thumbnail(size)
     print(img)
-
+    # encode to png bytestring
     fobj = io.BytesIO()
     img.save(fobj, "PNG")
     raw = base64.b64encode(fobj.getvalue())
@@ -263,7 +268,8 @@ def map_download_georef(request, pk):
             r"C:\Users\kimok\OneDrive\Documents\GitHub\mapsearch_site\mapsearch\warp server.py", # georef program
             mapp.url, # georef url
             mapp.transform] # transform
-    #print(args)
+    if request.GET.get('maxdim'):
+        args.append(request.GET.get('maxdim'))
     p = subprocess.run(args,
                        capture_output=True,
                        )
@@ -283,6 +289,23 @@ def map_download_georef(request, pk):
     # return
     resp = HttpResponse(res['warping']['image'], content_type='image/png') 
     resp['Content-Disposition'] = 'attachment; filename=warped.png'
+    return resp
+
+def map_download_thumb(request, pk):
+    import subprocess
+    import codecs
+    import io
+    import json
+
+    # find map
+    mapp = Map.objects.get(pk=pk)
+
+    # get thumbnail
+    thumb = base64.b64decode(mapp.thumbnail)
+
+    # return
+    resp = HttpResponse(thumb, content_type='image/png') 
+    resp['Content-Disposition'] = 'attachment; filename=thumbnail.png'
     return resp
 
 
