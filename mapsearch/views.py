@@ -105,6 +105,7 @@ def scrape(request):
                 if request.POST.get('update'):
                     print('updating')
                     map_update_about(request, mapp.pk)
+                    map_update_georef(request, mapp.pk)
                 
             else:
                 # add new
@@ -153,12 +154,12 @@ def map_add(request):
     img.save(fobj, "PNG")
     raw = base64.b64encode(fobj.getvalue())
     mapp.thumbnail = raw
-    
-    # process map in background? 
-    # ...
 
     # save
     mapp.save()
+
+    # georeference map? 
+    map_update_georef(request, mapp.pk)
 
     # redirect to map view
     return redirect('map_view', mapp.pk)
@@ -234,6 +235,11 @@ def map_update_georef(request, pk):
         mapp.gcps = json.dumps(res.get('gcps_final'))
     if res.get('transform_estimation'):
         mapp.transform = json.dumps(res.get('transform_estimation'))
+        x1,y1,x2,y2 = res['bbox']
+        mapp.xmin = min(x1,x2)
+        mapp.ymin = min(y1,y2)
+        mapp.xmax = max(x1,x2)
+        mapp.ymax = max(y1,y2)
 
     # calc footprint
     # ... 

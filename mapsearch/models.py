@@ -7,6 +7,10 @@ class Map(models.Model):
     url = models.URLField(blank=True)
     width = models.IntegerField(null=True)
     height = models.IntegerField(null=True)
+    xmin = models.FloatField(null=True)
+    ymin = models.FloatField(null=True)
+    xmax = models.FloatField(null=True)
+    ymax = models.FloatField(null=True)
     thumbnail = models.BinaryField(null=True, blank=True)
 
     georeferenced = models.DateTimeField(null=True)

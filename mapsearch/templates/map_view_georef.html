@@ -59,8 +59,8 @@
 		  map.options.minZoom = -10; 
 		  
 		  // add georef overlay
-		  var georefBounds = [[-10,0], [0,10]];
-		  var georefUrl = '/map/download/{{ map.pk }}/georef?maxdim=200';
+		  var georefBounds = [[{{ map.ymax }},{{ map.xmin }}], [{{ map.ymin }},{{ map.xmax }}]];
+		  var georefUrl = '/map/download/{{ map.pk }}/georef?maxdim=600';
 		  var georefLyr = L.imageOverlay(georefUrl, georefBounds);
 		  georefLyr.addTo(map);
 		  		  
@@ -71,7 +71,8 @@
 		  L.control.layers(null, {'Georeferenced':georefLyr, 'Control Points':gcpslyr}, {collapsed:false}).addTo(map);
 		  
 		  // zoom to extent
-		  map.fitBounds(gcpslyr.getBounds());
+		  map.fitBounds(georefBounds);
+		  //map.zoomOut();
 		  
 		  // zoom and pan behavior
 		  map.options.zoomSnap = 0;
@@ -88,14 +89,32 @@
 <br><br>
 
 <div class="alert alert-info" role="alert">
-<table style="width:100%">
+<table style="width:40%; table-layout: fixed;">
 	<tr>
-		<td style="font-weight: bold; vertical-align:top">Transform:</td>
-		<td>{{ form.transform }}</td>
+		<td style="font-weight: bold; padding:5px; vertical-align:top">Bounds:</td>
+		<td>
+			<table style="width:100%;">
+				<tr>
+					<td style="font-weight: bold; padding:5px; vertical-align:top">XMin:</td>
+					<td>{{ form.xmin.value }}</td>
+					<td style="font-weight: bold; padding:5px; vertical-align:top">XMax:</td>
+					<td>{{ form.xmax.value }}</td>
+				</tr>
+				<tr>
+					<td style="font-weight: bold; padding:5px; vertical-align:top">YMin:</td>
+					<td>{{ form.ymin.value }}</td>
+					<td style="font-weight: bold; padding:5px; vertical-align:top">YMax:</td>
+					<td>{{ form.ymax.value }}</td>
+				</tr>
+			</table>
+		</td>
+	<tr>
+		<td style="font-weight: bold; padding:5px; vertical-align:top">Transform:</td>
+		<td style="padding:5px;">{{ form.transform }}</td>
 	</tr>
 	<tr>
-		<td style="font-weight: bold; vertical-align:top">Control Points:</td>
-		<td>{{ form.gcps }}</td>
+		<td style="font-weight: bold; padding:5px; vertical-align:top">Control Points:</td>
+		<td style="padding:5px;">{{ form.gcps }}</td>
 	</tr>
 </table>
 </div> 
