@@ -110,52 +110,7 @@ def map_update_about(request, pk):
     # redirect to map view
     return redirect('map_view', mapp.pk)
 
-def map_view(request, pk, tab=None):
-    mapp = Map.objects.get(pk=pk)
-    mappform = MapForm(instance=mapp)
-    tab = tab or 'about'
-    return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'form':mappform, 'tab':tab})
-
-
-### 
-
-def map_download_georef(request, pk):
-    import subprocess
-    import codecs
-    import io
-    import json
-
-    # find map
-    mapp = Map.objects.get(pk=pk)
-
-    # set args
-    args = ["C:\Python27-64\python.exe", # python version
-            r"C:\Users\kimok\OneDrive\Documents\GitHub\mapsearch_site\mapsearch\warp server.py", # georef program
-            mapp.url, # georef url
-            mapp.transform] # transform
-    #print(args)
-    p = subprocess.run(args,
-                       capture_output=True,
-                       )
-    print('returncode')
-    print(repr(p.returncode))
-    #print('raw errors', p.stderr)
-    raw = p.stdout
-    #print('raw out', p.stdout)
-    res = json.loads(raw)
-    res['warping']['image'] = base64.b64decode(res['warping']['image'])
-    #fobj = io.BytesIO()
-    #fobj.write(res['warping']['image'])
-    #res['warping']['image'] = Image.open(fobj)
-    #print('as json', res)
-    #res['warping']['image'].show()
-
-    # return
-    resp = HttpResponse(res['warping']['image'], content_type='image/png') 
-    resp['Content-Disposition'] = 'attachment; filename=warped.png'
-    return resp
-
-def map_auto_georef(request, pk):
+def map_update_georef(request, pk):
     import subprocess
     import codecs
     import io
@@ -200,5 +155,52 @@ def map_auto_georef(request, pk):
 
     # redirect
     return redirect('map_view', mapp.pk, 'georef')
+
+def map_view(request, pk, tab=None):
+    mapp = Map.objects.get(pk=pk)
+    mappform = MapForm(instance=mapp)
+    tab = tab or 'about'
+    return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'form':mappform, 'tab':tab})
+
+
+### 
+
+
+def map_download_georef(request, pk):
+    import subprocess
+    import codecs
+    import io
+    import json
+
+    # find map
+    mapp = Map.objects.get(pk=pk)
+
+    # set args
+    args = ["C:\Python27-64\python.exe", # python version
+            r"C:\Users\kimok\OneDrive\Documents\GitHub\mapsearch_site\mapsearch\warp server.py", # georef program
+            mapp.url, # georef url
+            mapp.transform] # transform
+    #print(args)
+    p = subprocess.run(args,
+                       capture_output=True,
+                       )
+    print('returncode')
+    print(repr(p.returncode))
+    #print('raw errors', p.stderr)
+    raw = p.stdout
+    #print('raw out', p.stdout)
+    res = json.loads(raw)
+    res['warping']['image'] = base64.b64decode(res['warping']['image'])
+    #fobj = io.BytesIO()
+    #fobj.write(res['warping']['image'])
+    #res['warping']['image'] = Image.open(fobj)
+    #print('as json', res)
+    #res['warping']['image'].show()
+
+    # return
+    resp = HttpResponse(res['warping']['image'], content_type='image/png') 
+    resp['Content-Disposition'] = 'attachment; filename=warped.png'
+    return resp
+
 
 
