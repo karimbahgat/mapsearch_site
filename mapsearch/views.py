@@ -264,6 +264,7 @@ def map_download_georef(request, pk):
     mapp = Map.objects.get(pk=pk)
 
     # set args
+    print(request.GET.dict())
     args = ["C:\Python27-64\python.exe", # python version
             r"C:\Users\kimok\OneDrive\Documents\GitHub\mapsearch_site\mapsearch\warp server.py", # georef program
             mapp.url, # georef url

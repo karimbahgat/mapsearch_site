@@ -32,7 +32,7 @@ def warp_map(kwargs):
             # resize
             nw,nh = int(img.size[0]*ratio), int(img.size[1]*ratio)
             img = img.resize((nw,nh), Image.ANTIALIAS)
-            print('downsized',img)
+            print 'downsized', img
             # chain resize transform with existing transform
             transinfo = kwargs['priors']['transinfo']
             small2big = mapfit.transforms.Polynomial(order=1,
@@ -47,7 +47,7 @@ def warp_map(kwargs):
                                                         [0,0,1]],
                                                      ).info()
             transinfo['backward']['model'] = {'type':'Chain', 'params':{}, 'data':{'transforms':[transinfo['backward']['model'], big2small]} }
-            print(transinfo)
+            print transinfo
             kwargs['priors']['transinfo'] = transinfo
   
     # set params
@@ -73,7 +73,7 @@ if __name__ == '__main__':
               'priors':{'transinfo':trans},
               }
     if len(sys.argv) > 3:
-        maxdim = sys.argv[3]
+        maxdim = int(sys.argv[3])
         kwargs['maxdim'] = maxdim
     print(kwargs)
 
