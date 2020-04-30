@@ -54,7 +54,7 @@
 		  map.options.minZoom = -10; 
 		  
 		  // add image overlay
-		  var imageBounds = [[0,0], [1000,1100]];
+		  var imageBounds = [[0,0], [{{ form.height.value }},{{ form.width.value }}]];
 		  var imageUrl = '{{ form.url.value }}';
 		  var imglyr = L.imageOverlay(imageUrl, imageBounds);
 		  imglyr.addTo(map);

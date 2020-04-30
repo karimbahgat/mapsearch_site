@@ -138,7 +138,8 @@ def map_add(request):
         return redirect('map_view', mapp.pk)
     
     # add to db
-    mapp = Map.objects.create(url=dct['url'])
+    w,h = img.size
+    mapp = Map.objects.create(url=dct['url'], width=w, height=h)
 
     # create thumbnail
     max_size = 150
