@@ -45,6 +45,13 @@
 	<script type="text/javascript">
 	
 	  var layout = {{ form.layout.value|safe }};
+	  var texts = [{% for text in map.texts.all %}
+			{'type': 'Feature',
+			'properties': {},
+			'geometry': {{ text.geom|safe }}
+			},
+		{% endfor %}
+	  ];
 	  
 	  function map_init(map, options) {
 		  // set to pixel crs
@@ -62,8 +69,11 @@
 		  // add layout layer
 		  var layoutlyr = L.geoJson(layout, {}).addTo(map);
 		  
+		  // add text layer
+		  var textlyr = L.geoJson(texts, {'color':'red'}).addTo(map);
+		  
 		  // layers control
-		  L.control.layers({'Map':imglyr}, {'Layout':layoutlyr}, {collapsed:false}).addTo(map);
+		  L.control.layers({'Map':imglyr}, {'Layout':layoutlyr, 'Text':textlyr}, {collapsed:false}).addTo(map);
 		  
 		  // zoom to extent
 		  map.fitBounds(imageBounds);
@@ -77,7 +87,7 @@
 	  }
 	</script>
 
-	{% leaflet_map "search_map" callback="window.map_init" %}
+	{% leaflet_map "digi_map" callback="window.map_init" %}
 </div>
 
 <br>

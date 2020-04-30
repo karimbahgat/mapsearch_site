@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.http import QueryDict, HttpResponse
 
-from .models import Map
+from .models import Map, Text
 from .forms import MapForm
 
 import os
@@ -44,8 +44,7 @@ def search(request):
         
         else:
             # search text of existing maps
-            # ...
-            return render(request, 'templates/search.html', {})
+            return search_text(request)
     else:
         # front page search screen
         recent_maps = []
@@ -56,6 +55,19 @@ def search(request):
                 thumb = None
             recent_maps.append({'obj':m, 'thumb':thumb})
         return render(request, 'templates/search.html', {'recent_maps':recent_maps})
+
+def search_text(request):
+    if request.GET:
+        dct = request.GET.dict()
+        # text search results screen
+        maps = []
+        for m in Map.objects.filter(texts__text__contains=dct['search']): # limit somehow...
+            if m.thumbnail:
+                thumb = 'data:image/png;base64,' + str(m.thumbnail, 'ascii')
+            else:
+                thumb = None
+            maps.append({'obj':m, 'thumb':thumb})
+        return render(request, 'templates/search_text.html', {'maps':maps})
 
 def scrape(request):
     if request.GET:
@@ -115,7 +127,6 @@ def scrape(request):
                 map_add(request)
                 
         return redirect('home')
-
 
 #############################
 # MAP OBJECT
@@ -242,10 +253,29 @@ def map_update_georef(request, pk):
         mapp.ymax = max(y1,y2)
 
     # calc footprint
-    # ... 
+    # ...
 
-    # save
+    # save map
     mapp.save()
+
+    # then texts
+
+    # delete previous texts
+    for text in mapp.texts.all():
+        text.delete()
+
+    # add new texts
+    if res.get('text_recognition'):
+        for feat in res.get('text_recognition')['features']:
+            props = feat['properties']
+            vals = {'map':mapp,
+                    'text':props['text_clean'],
+                    'color':json.dumps(list(map(int, props['color']))),
+                    'fontheight':props['fontheight'],
+                    'geom':json.dumps(feat['geometry']),
+                    }
+            text = Text(**vals)
+            text.save()
 
     # redirect
     return redirect('map_view', mapp.pk, 'georef')
@@ -255,6 +285,8 @@ def map_update_georef(request, pk):
 def map_view(request, pk, tab=None):
     mapp = Map.objects.get(pk=pk)
     mappform = MapForm(instance=mapp)
+    for t in mapp.texts.all():
+        print(t.text)
     tab = tab or 'about'
     return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'form':mappform, 'tab':tab})
 

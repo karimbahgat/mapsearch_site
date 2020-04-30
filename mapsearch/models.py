@@ -19,4 +19,9 @@ class Map(models.Model):
     transform = models.TextField(blank=True, null=True)
     footprint = models.TextField(blank=True, null=True)
 
-
+class Text(models.Model):
+    map = models.ForeignKey('Map', on_delete=models.CASCADE, related_name='texts')
+    text = models.TextField(null=True, blank=True)
+    color = models.CharField(null=True, blank=True, max_length=25)
+    fontheight = models.IntegerField(null=True)
+    geom = models.TextField(blank=True, null=True)
