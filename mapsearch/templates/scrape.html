@@ -1,0 +1,81 @@
+
+{% extends "templates/base.html" %}
+{% load static %}
+
+{% block page_content %}
+
+<link href="//netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+
+<div style="width:85%; text-align:center">
+	<h3>
+		Website Search:
+	</h3>
+	<h4>
+		<a href="{{ request.GET.url }}">{{ request.GET.url }}</a>
+	</h4>
+</div>
+	
+<br>
+
+
+
+<form id="batch_form" action="{% url 'scrape' %}" method="post">
+{% csrf_token %}
+
+
+
+<div id="batch-opts" style="display:block; margin-left:5%; width:80%">
+	
+	<div class="row" style="display:block; margin-left:5%; width:100%">
+		<div class="col-md-9 custom-checkbox">
+			<input id="update" name="update" type="checkbox" value="yes" checked class="custom-control-input">
+			<label class="custom-control-label" for="update">Update Existing Maps?</label>
+		</div>
+		
+		<div class="col-md-3 custom-checkbox">
+			<button class="btn btn-primary" id="batch_button" type="submit">Batch Process</button>
+		</div>
+	</div>
+	
+</div>
+
+<div id="urls" style="margin-left:5%; width:80%">
+
+	<h4>
+	Maps Found ({{ urls|length }}):
+	</h4>
+
+	<div class="row">
+	{% for file,url in urls %}
+		<input name="images" type="hidden" value="{{ url }}">
+		<div class="col-sm-3" style="padding-bottom:10px">
+			<a href="{{ url }}">
+			<div class="card sm-3">
+				{% if 0 %}
+					<img class="card-img-top" src="{{ url }}" style="width:80px; height:70px; display:block; margin:auto; margin-top:20px">
+				{% else %}
+					<img class="card-img-top" src="https://www.pinclipart.com/picdir/big/79-797480_markers-clipart-whiteboard-marker-map-icon-png-black.png" style="width:50%; display:block; margin:auto; margin-top:20px">
+				{% endif %}
+				<div class="card-body">
+					<h5 class="card-title">{{ file }}</h5>
+					<p class="card-text"></p>
+					<div style="text-align:center">
+					<a href="{{ url }}"
+					   class="btn btn-primary">
+						View
+					</a>
+					</div>
+				</div>
+			</div>
+			</a>
+		</div>
+		{% endfor %}
+	</div>
+
+</div>
+
+</form>
+
+<br><br>
+	
+{% endblock %}

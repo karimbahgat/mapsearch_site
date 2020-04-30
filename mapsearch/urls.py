@@ -11,4 +11,5 @@ urlpatterns = [
     path('map/view/<int:pk>/', views.map_view, name='map_view'),
     path('map/view/<int:pk>/<str:tab>', views.map_view, name='map_view'),
     path('map/download/<int:pk>/georef/', views.map_download_georef, name='map_download_georef'),
+    path('scrape/', views.scrape, name='scrape'),
 ]

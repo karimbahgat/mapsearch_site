@@ -5,6 +5,7 @@ from django.http import QueryDict, HttpResponse
 from .models import Map
 from .forms import MapForm
 
+import os
 import urllib
 import io
 import base64
@@ -12,23 +13,34 @@ from PIL import Image
 
 # Create your views here.
 
+######################
+# GENERAL VIEWS
+
 def search(request):
     if request.GET:
         # get search results
         dct = request.GET.dict()
         
         if dct['search'].startswith('http'):
-            # searching map url
-            # check if already exists in db
-            matches = Map.objects.filter(url=dct['search'])
-            mapp = matches[0] if matches else None
-            if mapp is None:
+            # searching url
+            if dct['search'].endswith(('.jpg','.png','.gif','.tif')):
+                # searching specific map
+                # check if already exists in db
+                matches = Map.objects.filter(url=dct['search'])
+                mapp = matches[0] if matches else None
+                if mapp is None:
+                    request.GET = QueryDict(mutable=True)
+                    request.GET['url'] = dct['search']
+                    return map_add(request)
+                    
+                # link to the map view
+                return redirect('map_view', mapp.pk)
+
+            else:
+                # searching website
                 request.GET = QueryDict(mutable=True)
                 request.GET['url'] = dct['search']
-                return map_add(request)
-                
-            # link to the map view
-            return redirect('map_view', mapp.pk)
+                return scrape(request)
         
         else:
             # search text of existing maps
@@ -39,15 +51,75 @@ def search(request):
         recent_maps = []
         for m in Map.objects.order_by('-created'): # limit somehow...
             if m.thumbnail:
-                print(repr(m.thumbnail))
                 thumb = 'data:image/png;base64,' + str(m.thumbnail, 'ascii')
-                print(repr(thumb))
             else:
                 thumb = None
             recent_maps.append({'obj':m, 'thumb':thumb})
         return render(request, 'templates/search.html', {'recent_maps':recent_maps})
 
-# MAP
+def scrape(request):
+    if request.GET:
+        # landing page for deciding+defining a url scrape
+        dct = request.GET.dict()
+        root_url = dct['url']
+        root_url_dir = os.path.split(root_url)[0]
+
+        # parse website html
+        raw = urllib.request.urlopen(root_url).read()
+        raw = str(raw)
+        elems = raw.replace('>', '<').split('<')
+
+        # loop and identify image links
+        urls = []
+        for elem in elems:
+            if elem.startswith('a href='):
+                url = elem.replace('a href=', '').strip('"')
+
+                if url.endswith(('.png','.jpg','.gif','.tif')):
+                    # make relative links to absolute
+                    if not url.startswith('http'):
+                        url = root_url_dir.strip('/') + '/' + url.strip('/')
+
+                    print(url)
+
+                    # skip if already exists
+                    #matches = Map.objects.filter(url=url)
+                    #if matches
+                    #    continue
+
+                    # get filename
+                    filename = os.path.split(url)[-1]
+                    urls.append((filename,url))
+
+        # send to template for displaying
+        return render(request, 'templates/scrape.html', {'urls':urls})
+
+    elif request.POST:
+        for url in request.POST.getlist('images'):
+            print(url)
+            matches = Map.objects.filter(url=url)
+            mapp = matches[0] if matches else None
+            
+            if mapp:
+                # update existing
+                if request.POST.get('update'):
+                    print('updating')
+                    map_update_about(request, mapp.pk)
+                
+            else:
+                # add new
+                print('adding') 
+                request.GET = QueryDict(mutable=True)
+                request.GET['url'] = url
+                map_add(request)
+                
+        return redirect('home')
+
+
+#############################
+# MAP OBJECT
+
+# ADD
 
 def map_add(request):
     dct = request.GET.dict()
@@ -56,6 +128,14 @@ def map_add(request):
     fobj = io.BytesIO(urllib.request.urlopen(dct['url']).read())
     img = Image.open(fobj)
     print(img)
+
+    # check that doesn't already exist
+    matches = Map.objects.filter(url=dct['url'])
+    mapp = matches[0] if matches else None
+    if mapp:
+        # already exists, redirect to map view
+        # MAYBE UPDATE INSTEAD? 
+        return redirect('map_view', mapp.pk)
     
     # add to db
     mapp = Map.objects.create(url=dct['url'])
@@ -81,6 +161,8 @@ def map_add(request):
 
     # redirect to map view
     return redirect('map_view', mapp.pk)
+
+# UPDATE
 
 def map_update_about(request, pk):
     # add to db
@@ -156,15 +238,15 @@ def map_update_georef(request, pk):
     # redirect
     return redirect('map_view', mapp.pk, 'georef')
 
+# VIEW
+
 def map_view(request, pk, tab=None):
     mapp = Map.objects.get(pk=pk)
     mappform = MapForm(instance=mapp)
     tab = tab or 'about'
     return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'form':mappform, 'tab':tab})
 
-
-### 
-
+# DOWNLOAD
 
 def map_download_georef(request, pk):
     import subprocess
