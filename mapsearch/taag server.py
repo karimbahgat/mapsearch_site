@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     # parse args
     url = sys.argv[1]
-    kwargs = {'url':url, 'textcolor':(0,0,0)}
+    kwargs = {'url':url} #, 'textcolor':(0,0,0)}
 
     # run
     result = georeference_map(kwargs)

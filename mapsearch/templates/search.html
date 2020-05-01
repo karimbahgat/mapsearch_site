@@ -60,7 +60,7 @@ Search the Internet for Maps
 				{% endif %}
 				<div class="card-body">
 					<h5 class="card-title"></h5>
-					<p class="card-text"></p>
+					<p class="card-text">{{ mapp.obj.created|timesince }}</p>
 					<div style="text-align:center">
 					<a href="{% url 'map_view' mapp.obj.pk %}"
 					   class="btn btn-primary">

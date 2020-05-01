@@ -59,15 +59,26 @@ def search(request):
 def search_text(request):
     if request.GET:
         dct = request.GET.dict()
-        # text search results screen
+        # text filters
+        filt = dct.get('filter')
+        templ = 'search_text.html'
+        results = Map.objects.filter(texts__text__contains=dct['search']) # limit somehow...
+        if filt == 'georef':
+            templ = 'search_text_georef.html'
+            results = results.exclude(xmin=None)
+        elif filt == 'temp':
+            templ = 'search_text_temp.html'
+            results = results.exclude(date=None) # not correct... 
+        # map results
         maps = []
-        for m in Map.objects.filter(texts__text__contains=dct['search']): # limit somehow...
+        for m in results:
             if m.thumbnail:
                 thumb = 'data:image/png;base64,' + str(m.thumbnail, 'ascii')
             else:
                 thumb = None
             maps.append({'obj':m, 'thumb':thumb})
-        return render(request, 'templates/search_text.html', {'maps':maps})
+            
+        return render(request, 'templates/'+templ, {'maps':maps})
 
 def scrape(request):
     if request.GET:
