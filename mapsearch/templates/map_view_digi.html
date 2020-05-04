@@ -52,6 +52,7 @@
 			},
 		{% endfor %}
 	  ];
+	  var highlight = {{ highlight|safe }};
 	  
 	  function map_init(map, options) {
 		  // set to pixel crs
@@ -70,17 +71,30 @@
 		  var layoutlyr = L.geoJson(layout, {}).addTo(map);
 		  
 		  // add text layer
-		  var textlyr = L.geoJson(texts, {'color':'red'}).addTo(map);
+		  var textlyr = L.geoJson(texts, {'color':'black'}).addTo(map);
+		  
+		  // add highlight layer
+		  var highlightlyr = L.geoJson(highlight, {'color':'yellow'}).addTo(map);
 		  
 		  // layers control
-		  L.control.layers({'Map':imglyr}, {'Layout':layoutlyr, 'Text':textlyr}, {collapsed:false}).addTo(map);
+		  L.control.layers({}, {'Map':imglyr, 'Layout':layoutlyr, 'Text':textlyr}, {collapsed:false}).addTo(map);
 		  
 		  // zoom to extent
-		  map.fitBounds(imageBounds);
+		  if (highlightlyr.getBounds().isValid()) {
+			highlightBounds = highlightlyr.getBounds();
+			map.fitBounds(highlightBounds);
+		  } else {
+			map.fitBounds(imageBounds);
+		  };
+		  
+		  
+		  // refresh map render
+		  map.panBy([1,1]);
+		  map.invalidateSize();
 		  
 		  // zoom and pan behavior
 		  map.options.zoomSnap = 0;
-		  //map.options.zoomDelta = 10;
+		  //map.options.zoomDelta = 1;
 		  map.options.wheelPxPerZoomLevel = 40; //40
 		  map.options.wheelDebounceTime = 80; //60
 		  map.options.maxBoundsViscosity = 1;
@@ -88,6 +102,7 @@
 	</script>
 
 	{% leaflet_map "digi_map" callback="window.map_init" %}
+
 </div>
 
 <br>

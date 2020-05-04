@@ -10,6 +10,7 @@ import os
 import urllib
 import io
 import re
+import json
 import base64
 from PIL import Image
 
@@ -65,11 +66,7 @@ def search_text(request):
         # perform search
         from django.db.models import F, Func, Aggregate
         results = Map.objects.filter(texts__text__contains=dct['search']) | Map.objects.filter(url__contains=dct['search'])
-        results = results.distinct() #annotate(count=Count('pk')) #, concat=Func(F('texts__text'), function='GROUP_CONCAT')) 
-        #text_results = Text.objects.filter(text__contains=dct['search'])
-        #map_results = Map.objects.filter(url__contains=dct['search'])
-        #results = text_results | filename_results
-        #results = (text_results.values('map') | map_results.values(map='pk'))#.annotate(count=Count('map'))
+        results = results.distinct() 
 
         # get correct sub page
         filt = dct.get('filter')
@@ -77,36 +74,9 @@ def search_text(request):
         if filt == 'georef':
             templ = 'search_text_georef.html'
             results = results.exclude(xmin=None)
-            #text_results = text_results.exclude(map__xmin=None)
-            #map_results = map_results.exclude(xmin=None)
         elif filt == 'temp':
             templ = 'search_text_temp.html'
-            results = results.exclude(xmin=None)
-            #text_results = text_results.exclude(map__date=None) # not correct...
-            #map_results = map_results.exclude(date=None) # not correct...
-            
-##        # first map results
-##        map_objs = []
-##        for m in map_results:
-##            print(m)
-##            map_objs.append(m)
-##
-##        # then text only results
-##        results = text_results.annotate(count=Count('map'))
-##        for t in text_results:
-##            m = Map.objects.get(pk=t['map'])
-##            print(m)
-##            map_objs.append(m)
-##        
-##        # final results
-##        maps = []
-##        for m in map_objs[:50]: # first 50
-##            print(m)
-##            if m.thumbnail:
-##                thumb = 'data:image/png;base64,' + str(m.thumbnail, 'ascii')
-##            else:
-##                thumb = None
-##            maps.append({'obj':m, 'thumb':thumb})
+            results = results.exclude(date=None) # not correct...
 
         # final results
         maps = []
@@ -371,7 +341,17 @@ def map_view(request, pk, tab=None):
     mapp = Map.objects.get(pk=pk)
     mappform = MapForm(instance=mapp)
     tab = tab or 'about'
-    return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'form':mappform, 'tab':tab})
+    context = {'map':mapp, 'form':mappform, 'tab':tab}
+
+    # get highlight features if searching
+    highlight = []
+    if tab == 'digi' and request.GET.get('search'):
+         texts = [{'type':'Feature','properties':{'text':t.text},'geometry':json.loads(t.geom)} for t in
+                    mapp.texts.filter(text__contains=request.GET['search'])]
+         highlight.extend(texts)
+    context['highlight'] = json.dumps(highlight)
+         
+    return render(request, 'templates/map_view_{}.html'.format(tab), context)
 
 # DOWNLOAD
 
