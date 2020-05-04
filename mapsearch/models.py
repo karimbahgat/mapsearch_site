@@ -25,3 +25,33 @@ class Text(models.Model):
     color = models.CharField(null=True, blank=True, max_length=25)
     fontheight = models.IntegerField(null=True)
     geom = models.TextField(blank=True, null=True)
+
+class Layer(models.Model):
+    map = models.ForeignKey('Map', on_delete=models.CASCADE, related_name='layers')
+    name = models.TextField(null=True, blank=True)
+    type = models.CharField(max_length=30, choices=[('Point','Point'),
+                                                    ('LineString','LineString'),
+                                                    ('Polygon','Polygon')])
+    legend_description = models.ManyToManyField(Text, blank=True)
+    legend_symbol = models.TextField(blank=True, null=True) # geojson coords to image legend symbol
+    comment = models.TextField(null=True, blank=True)
+
+    def to_geojson(self):
+        import json
+        return {'type':'FeatureCollection',
+                'features':[feat.to_geojson() for feat in self.features.all()]}
+
+class Feature(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+    layer = models.ForeignKey('Layer', on_delete=models.CASCADE, related_name='features')
+    geom = models.TextField(blank=True, null=True)
+    label = models.ManyToManyField(Text, blank=True)
+
+    def to_geojson(self):
+        import json
+        return {'type':'Feature',
+                'properties':{'id':self.pk},
+                'geometry':json.loads(self.geom)
+                }
+
+    

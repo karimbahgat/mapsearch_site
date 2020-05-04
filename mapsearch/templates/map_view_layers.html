@@ -95,7 +95,15 @@
 		  var highlightlyr = L.geoJson(highlight, {'color':'yellow'}).addTo(map);
 		  
 		  // layers control
-		  L.control.layers({}, {'Map':imglyr, 'Layout':layoutlyr, 'Text':textlyr}, {collapsed:false}).addTo(map);
+		  var layersControl = L.control.layers({}, {'Map':imglyr, 'Layout':layoutlyr, 'Text':textlyr}, {collapsed:false}).addTo(map);
+		  
+		  // digitized layers
+		  {% for lyr in layers %}
+			lyrdata = {{ lyr.to_geojson|safe }};
+			leaflayer = L.geoJson(lyrdata, {}).addTo(map);
+			var name = {% firstof lyr.name lyr.pk %}
+			layersControl.addOverlay(leaflayer, name);
+		  {% endfor %}
 		  
 		  // zoom and pan behavior
 		  map.options.zoomSnap = 0;
@@ -105,6 +113,7 @@
 		  map.options.maxBoundsViscosity = 1;
 		  
 		  // zoom to extent
+		  //alert(highlightlyr.getBounds().toBBoxString());
 		  if (highlightlyr.getBounds().isValid()) {
 			highlightBounds = highlightlyr.getBounds();
 			map.fitBounds(highlightBounds);
@@ -131,18 +140,37 @@
 <h4 class="alert-heading">Layers</h4>
 <table style="width:100%" class="table table-dark">
 	<tr>
-		<td style="font-weight: bold; padding:5px">#1:</td>
-		<td>Cell 1</td>
+		<th>Symbol</th>
+		<th>Name</th>
+		<th>Geometry</th>
+		<th>Description</th>
+		<th>Comment</th>
+		<th></th>
 	</tr>
-		<tr>
-		<td style="font-weight: bold; padding:5px">#2:</td>
-		<td>Cell 2</td>
+	{% for lyr in layers %}
+	<tr>
+		<td><img src="https://cdn2.iconfinder.com/data/icons/geometry-outline/60/42_-Geometric_Form-_geometry_shape_form_drawing-512.png" height=20px style="filter: invert(1)"></td>
+		<td style="font-weight: bold; padding:5px">{{ lyr.name }}</td>
+		<td>{{ lyr.type }}</td>
+		<td>[Description...]</td>
+		<td>{{ lyr.comment }}</td>
+		<td>
+		<a href="{% url 'layer_edit' lyr.pk %}">
+		<img src="https://cdn2.iconfinder.com/data/icons/flat-ui-icons-24-px/24/new-24-512.png" height=20px style="filter: invert(1)">
+		</td>
 	</tr>
+	{% endfor %}
 </table>
+<div style="width:100%; text-align:center">
+<a href="{% url 'layer_add' %}?map={{ map.pk }}" class="btn btn-primary">
+	Add New Layer
+</a>
+</div>
+
 </div>
 
 <div class="alert alert-info" role="alert">
-<h4 class="alert-heading">About</h4>
+<h4 class="alert-heading">About This Map</h4>
 <table style="width:100%">
 	<tr>
 		<td style="font-weight: bold; padding:5px">URL:</td>

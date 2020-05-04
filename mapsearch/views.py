@@ -3,8 +3,8 @@ from django.utils import timezone
 from django.http import QueryDict, HttpResponse
 from django.db.models import Count
 
-from .models import Map, Text
-from .forms import MapForm
+from .models import Map, Text, Layer, Feature
+from .forms import MapForm, LayerForm
 
 import os
 import urllib
@@ -230,6 +230,46 @@ def map_add(request):
     # redirect to map view
     return redirect('map_view', mapp.pk)
 
+def layer_add(request):
+    dct = request.GET.dict()
+    mapp = Map.objects.get(pk=dct['map'])
+    lyr = Layer(map=mapp)
+    lyr.save()
+
+    # redirect to layer edit
+    return redirect('layer_edit', lyr.pk)
+
+# EDIT
+def layer_edit(request, pk):
+    lyr = Layer.objects.get(pk=pk)
+
+    if not request.POST:
+        lyrform = LayerForm(instance=lyr)
+        features = [feat #json.dumps({'type':'Feature', 'properties':{}, 'geometry':json.loads(feat.geom)})
+                    for feat in lyr.features.all()]
+
+        mapp = lyr.map
+        mapp.filename = os.path.basename(mapp.url)
+
+        # redirect to layer edit
+        return render(request, 'templates/layer_edit.html', {'form':lyrform, 'layer':lyr, 'map':mapp, 'highlight':features})
+
+    elif request.POST:
+        # add 'features' geojson as Feature instances
+        geoj = json.loads(request.POST['features'])
+        for feat in geoj['features']:
+            if lyr.features.filter(geom=json.dumps(feat['geometry'])):
+                # already exists, ignore
+                pass
+            else:
+                # new or changed
+                fobj = Feature(layer=lyr, geom=json.dumps(feat['geometry']))
+                fobj.save()
+                lyr.features.add(fobj)
+
+        # redirect to map layers view
+        return redirect('map_view', lyr.map.pk)
+
 # UPDATE
 
 def map_update_about(request, pk):
@@ -351,6 +391,12 @@ def map_view(request, pk, tab=None):
                     mapp.texts.filter(text__contains=request.GET['search'])]
          highlight.extend(texts)
     context['highlight'] = highlight
+
+    # get layers
+    layers = []
+    if tab == 'layers':
+        layers = mapp.layers.all()
+    context['layers'] = layers
          
     return render(request, 'templates/map_view_{}.html'.format(tab), context)
 

@@ -14,4 +14,6 @@ urlpatterns = [
     path('map/download/<int:pk>/thumb/', views.map_download_thumb, name='map_download_thumb'),
     path('scrape/', views.scrape, name='scrape'),
     path('search/text/', views.search_text, name='search_text'),
+    path('layer/add/', views.layer_add, name='layer_add'),
+    path('layer/edit/<int:pk>/', views.layer_edit, name='layer_edit'),
 ]
