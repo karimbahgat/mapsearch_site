@@ -349,7 +349,7 @@ def map_view(request, pk, tab=None):
          texts = [{'type':'Feature','properties':{'text':t.text},'geometry':json.loads(t.geom)} for t in
                     mapp.texts.filter(text__contains=request.GET['search'])]
          highlight.extend(texts)
-    context['highlight'] = json.dumps(highlight)
+    context['highlight'] = highlight
          
     return render(request, 'templates/map_view_{}.html'.format(tab), context)
 

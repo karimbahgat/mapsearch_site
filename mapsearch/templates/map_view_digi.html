@@ -42,9 +42,17 @@
 		</td>
 	</form>
 	</tr>
+	
+	<tr>
+		<td style="font-style:italic; font-size:small; padding:10px">
+		{% if request.GET.search %}
+			Text results:
+			{{ highlight|length }}
+		{% endif %}
+		</td>
+	</tr>
+	
 </table>
-
-<br><br>
 
 <div id="map_div">
 	{% block extra_assets %}
@@ -62,7 +70,7 @@
 			},
 		{% endfor %}
 	  ];
-	  var highlight = {{ highlight|safe }};
+	  var highlight = {{ highlight|geojsonfeature:':geometry'|safe }};
 	  
 	  function map_init(map, options) {
 		  // set to pixel crs
@@ -89,6 +97,13 @@
 		  // layers control
 		  L.control.layers({}, {'Map':imglyr, 'Layout':layoutlyr, 'Text':textlyr}, {collapsed:false}).addTo(map);
 		  
+		  // zoom and pan behavior
+		  map.options.zoomSnap = 0;
+		  //map.options.zoomDelta = 0.1;
+		  map.options.wheelPxPerZoomLevel = 40; //40
+		  map.options.wheelDebounceTime = 80; //60
+		  map.options.maxBoundsViscosity = 1;
+		  
 		  // zoom to extent
 		  if (highlightlyr.getBounds().isValid()) {
 			highlightBounds = highlightlyr.getBounds();
@@ -101,17 +116,16 @@
 		  map.panBy([1,1]);
 		  map.invalidateSize();
 		  map.panBy([1,1]);
-		  
-		  // zoom and pan behavior
-		  map.options.zoomSnap = 0;
-		  //map.options.zoomDelta = 0.1;
-		  map.options.wheelPxPerZoomLevel = 40; //40
-		  map.options.wheelDebounceTime = 80; //60
-		  map.options.maxBoundsViscosity = 1;
 	  }
 	</script>
 
 	{% leaflet_map "digi_map" callback="window.map_init" %}
+	
+	<style>
+    .leaflet-container {  /* all maps */
+        height: 600px;
+    }
+	</style>
 
 </div>
 
