@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.http import QueryDict, HttpResponse
+from django.db.models import Count
 
 from .models import Map, Text
 from .forms import MapForm
@@ -8,6 +9,7 @@ from .forms import MapForm
 import os
 import urllib
 import io
+import re
 import base64
 from PIL import Image
 
@@ -59,24 +61,96 @@ def search(request):
 def search_text(request):
     if request.GET:
         dct = request.GET.dict()
-        # text filters
+
+        # perform search
+        from django.db.models import F, Func, Aggregate
+        results = Map.objects.filter(texts__text__contains=dct['search']) | Map.objects.filter(url__contains=dct['search'])
+        results = results.distinct() #annotate(count=Count('pk')) #, concat=Func(F('texts__text'), function='GROUP_CONCAT')) 
+        #text_results = Text.objects.filter(text__contains=dct['search'])
+        #map_results = Map.objects.filter(url__contains=dct['search'])
+        #results = text_results | filename_results
+        #results = (text_results.values('map') | map_results.values(map='pk'))#.annotate(count=Count('map'))
+
+        # get correct sub page
         filt = dct.get('filter')
         templ = 'search_text.html'
-        results = Map.objects.filter(texts__text__contains=dct['search']) # limit somehow...
         if filt == 'georef':
             templ = 'search_text_georef.html'
             results = results.exclude(xmin=None)
+            #text_results = text_results.exclude(map__xmin=None)
+            #map_results = map_results.exclude(xmin=None)
         elif filt == 'temp':
             templ = 'search_text_temp.html'
-            results = results.exclude(date=None) # not correct... 
-        # map results
+            results = results.exclude(xmin=None)
+            #text_results = text_results.exclude(map__date=None) # not correct...
+            #map_results = map_results.exclude(date=None) # not correct...
+            
+##        # first map results
+##        map_objs = []
+##        for m in map_results:
+##            print(m)
+##            map_objs.append(m)
+##
+##        # then text only results
+##        results = text_results.annotate(count=Count('map'))
+##        for t in text_results:
+##            m = Map.objects.get(pk=t['map'])
+##            print(m)
+##            map_objs.append(m)
+##        
+##        # final results
+##        maps = []
+##        for m in map_objs[:50]: # first 50
+##            print(m)
+##            if m.thumbnail:
+##                thumb = 'data:image/png;base64,' + str(m.thumbnail, 'ascii')
+##            else:
+##                thumb = None
+##            maps.append({'obj':m, 'thumb':thumb})
+
+        # final results
         maps = []
-        for m in results:
+        for m in results[:50]: # first 50
+            print(m)
+            # thumbnail
             if m.thumbnail:
                 thumb = 'data:image/png;base64,' + str(m.thumbnail, 'ascii')
             else:
                 thumb = None
-            maps.append({'obj':m, 'thumb':thumb})
+            # filename match
+            filename = os.path.basename(m.url)
+            filename = re.sub('({})'.format(dct['search']), r"<b>\1</b>", filename, flags=re.IGNORECASE)
+            # text match
+            texts = ''
+            maxlen = 50
+            for t in m.texts.filter(text__contains=dct['search']):
+                # each text
+                text = t.text
+                for rm in re.finditer(dct['search'], text, flags=re.IGNORECASE):
+                    # each occurence in each text
+                    match = text[rm.start(): rm.end()]
+                    match = '<b>'+match+'</b>'
+                    pre = text[:rm.start()]
+                    if len(pre) > 5:
+                        if not texts.endswith('...'):
+                            pre += '...'
+                        pre = pre[-5:]
+                    post = text[rm.end():]
+                    if len(post) > 5:
+                        post = post[:5]
+                        post += '...'
+                    subtext = pre + match + post
+                    texts += subtext
+                    textlen = len(texts)
+                    if textlen >= maxlen:
+                        if not texts.endswith('...'):
+                            texts += '...'
+                        break
+                    if not texts.endswith('...'):
+                        texts += '...'
+                if textlen >= maxlen:
+                    break
+            maps.append({'obj':m, 'thumb':thumb, 'filename':filename, 'texts':texts})
             
         return render(request, 'templates/'+templ, {'maps':maps})
 
@@ -296,8 +370,6 @@ def map_update_georef(request, pk):
 def map_view(request, pk, tab=None):
     mapp = Map.objects.get(pk=pk)
     mappform = MapForm(instance=mapp)
-    for t in mapp.texts.all():
-        print(t.text)
     tab = tab or 'about'
     return render(request, 'templates/map_view_{}.html'.format(tab), {'map':mapp, 'form':mappform, 'tab':tab})
 

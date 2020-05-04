@@ -114,8 +114,14 @@
 					<img class="card-img-top" src="https://www.pinclipart.com/picdir/big/79-797480_markers-clipart-whiteboard-marker-map-icon-png-black.png" style="width:50%; display:block; margin:auto; margin-top:20px">
 				{% endif %}
 				<div class="card-body">
-					<h5 class="card-title"></h5>
-					<p class="card-text"></p>
+					<h5 class="card-title">{{ mapp.filename|safe }}</h5>
+					<p class="card-text" style="padding-left:5px">
+					{% if mapp.texts %}
+						<em>"{{ mapp.texts|safe }}"</em>
+					{% else %}
+						<em>No matching text</em>
+					{% endif %}
+					</p>
 					<div style="text-align:center">
 					<a href="{% url 'map_view' mapp.obj.pk 'digi' %}"
 					   class="btn btn-primary">
@@ -126,7 +132,7 @@
 			</div>
 			</a>
 		</div>
-		{% endfor %}
+	{% endfor %}
 	</div>
 
 {% else %}
