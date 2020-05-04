@@ -76,7 +76,7 @@
 			  // set to pixel crs
 			  //map.options.crs = L.CRS.Simple;
 			  //map.options.crs.transformation = new L.Transformation(1, 0, 1, 0);
-			  map.options.maxBounds = null;
+			  //map.options.maxBounds = null;
 			  map.options.minZoom = -10; 
 					  
 			  // add maps layer
@@ -106,7 +106,7 @@
 	<div class="row">
 	{% for mapp in maps %}
 		<div class="col-sm-3" style="padding-bottom:10px">
-			<a href="{% url 'map_view' mapp.obj.pk 'digi' %}?search={{ request.GET.search }}">
+			<a href="{% url 'map_view' mapp.obj.pk 'layers' %}?search={{ request.GET.search }}">
 			<div class="card sm-3">
 				{% if mapp.thumb %}
 					<img class="card-img-top" src="{{ mapp.thumb }}" style="width:80px; height:70px; display:block; margin:auto; margin-top:20px">
@@ -123,7 +123,7 @@
 					{% endif %}
 					</p>
 					<div style="text-align:center">
-					<a href="{% url 'map_view' mapp.obj.pk 'digi' %}?search={{ request.GET.search }}"
+					<a href="{% url 'map_view' mapp.obj.pk 'layers' %}?search={{ request.GET.search }}"
 					   class="btn btn-primary">
 						View
 					</a>

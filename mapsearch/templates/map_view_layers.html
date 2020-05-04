@@ -33,7 +33,7 @@
 		</td>
 	</tr>
 	<tr>
-	<form id="search_map" action="{% url 'map_view' map.pk 'digi' %}" method="get">
+	<form id="search_map" action="{% url 'map_view' map.pk 'layers' %}" method="get">
 		<td>
 		<input class="form-control col-md-10" id="search" name="search" type="text" placeholder="Search map..." value="{{ request.GET.search }}">
 		</td>
@@ -76,7 +76,7 @@
 		  // set to pixel crs
 		  map.options.crs = L.CRS.Simple;
 		  map.options.crs.transformation = new L.Transformation(1, 0, 1, 0);
-		  map.options.maxBounds = null;
+		  map.options.maxBounds = L.latLngBounds(L.latLng(-100000,-100000),L.latLng(100000,100000));
 		  map.options.minZoom = -10; 
 		  
 		  // add image overlay
@@ -108,18 +108,14 @@
 		  if (highlightlyr.getBounds().isValid()) {
 			highlightBounds = highlightlyr.getBounds();
 			map.fitBounds(highlightBounds);
+			map.zoomOut();
 		  } else {
 			map.fitBounds(imageBounds);
 		  };
-		  
-		  // refresh map render
-		  map.panBy([1,1]);
-		  map.invalidateSize();
-		  map.panBy([1,1]);
 	  }
 	</script>
 
-	{% leaflet_map "digi_map" callback="window.map_init" %}
+	{% leaflet_map "layers_map" callback="window.map_init" %}
 	
 	<style>
     .leaflet-container {  /* all maps */
@@ -131,7 +127,38 @@
 
 <br>
 
+<div class="alert alert-dark" role="alert">
+<h4 class="alert-heading">Layers</h4>
+<table style="width:100%" class="table table-dark">
+	<tr>
+		<td style="font-weight: bold; padding:5px">#1:</td>
+		<td>Cell 1</td>
+	</tr>
+		<tr>
+		<td style="font-weight: bold; padding:5px">#2:</td>
+		<td>Cell 2</td>
+	</tr>
+</table>
+</div>
+
 <div class="alert alert-info" role="alert">
+<h4 class="alert-heading">About</h4>
+<table style="width:100%">
+	<tr>
+		<td style="font-weight: bold; padding:5px">URL:</td>
+		<td><a href={{ map.url }}>{{ map.url }}</a></td>
+		<td><a href="{% url 'map_update_about' map.pk %}" class="btn btn-primary">
+			Update Info
+			</a></td>
+	</tr>
+		<tr>
+		<td style="font-weight: bold; padding:5px">Dimensions:</td>
+		<td>{{ map.width }} x {{ map.height }}</td>
+	</tr>
+</table>
+</div> 
+
+<div class="alert alert-info" role="alert" style="display:none">
 <table style="width:100%">
 	<tr>
 		<td style="font-weight: bold; vertical-align:top">Layout:</td>

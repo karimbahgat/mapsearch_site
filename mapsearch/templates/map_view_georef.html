@@ -50,12 +50,27 @@
 	<script type="text/javascript">
 	
 	  var gcps = {{ form.gcps.value|safe }};
+	  {% if map.xmin %}
+	  var extent = [{'type': 'Feature',
+					'properties': {},
+					'geometry': {'type':'Polygon',
+								'coordinates': [
+												[
+												[{{ map.xmin }},{{map.ymin}}],
+												[{{ map.xmin }},{{map.ymax}}],
+												[{{ map.xmax }},{{map.ymax}}],
+												[{{ map.xmax }},{{map.ymin}}]
+												]
+												]
+								}
+					}];
+	  {% endif %}
 	  
 	  function map_init(map, options) {
 		  // set to pixel crs
 		  //map.options.crs = L.CRS.Simple;
 		  //map.options.crs.transformation = new L.Transformation(1, 0, 1, 0);
-		  map.options.maxBounds = null;
+		  //map.options.maxBounds = null;
 		  map.options.minZoom = -10; 
 		  
 		  // add georef overlay
@@ -63,16 +78,17 @@
 		  var georefUrl = '/map/download/{{ map.pk }}/georef?maxdim=600';
 		  var georefLyr = L.imageOverlay(georefUrl, georefBounds);
 		  georefLyr.addTo(map);
+		  
+		  // add map extent
+		  {% if map.xmin %}
+			var extentlyr = L.geoJson(extent, {}).addTo(map);
+		  {% endif %}
 		  		  
 		  // add gcps layer
 		  var gcpslyr = L.geoJson(gcps, {}).addTo(map);
 		  
 		  // layers control
-		  L.control.layers(null, {'Georeferenced':georefLyr, 'Control Points':gcpslyr}, {collapsed:false}).addTo(map);
-		  
-		  // zoom to extent
-		  map.fitBounds(georefBounds);
-		  //map.zoomOut();
+		  L.control.layers(null, {'Georeferenced':georefLyr, 'Extent':extentlyr, 'Control Points':gcpslyr}, {collapsed:false}).addTo(map);
 		  
 		  // zoom and pan behavior
 		  map.options.zoomSnap = 0;
@@ -80,6 +96,10 @@
 		  map.options.wheelPxPerZoomLevel = 40; //40
 		  map.options.wheelDebounceTime = 80; //60
 		  map.options.maxBoundsViscosity = 1;
+		  
+		  // zoom to extent
+		  map.fitBounds(georefBounds);
+		  map.zoomOut();
 	  }
 	</script>
 

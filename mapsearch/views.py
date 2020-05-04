@@ -339,13 +339,14 @@ def map_update_georef(request, pk):
 
 def map_view(request, pk, tab=None):
     mapp = Map.objects.get(pk=pk)
+    mapp.filename = os.path.basename(mapp.url)
     mappform = MapForm(instance=mapp)
-    tab = tab or 'about'
+    tab = tab or 'layers'
     context = {'map':mapp, 'form':mappform, 'tab':tab}
 
     # get highlight features if searching
     highlight = []
-    if tab == 'digi' and request.GET.get('search'):
+    if tab == 'layers' and request.GET.get('search'):
          texts = [{'type':'Feature','properties':{'text':t.text},'geometry':json.loads(t.geom)} for t in
                     mapp.texts.filter(text__contains=request.GET['search'])]
          highlight.extend(texts)

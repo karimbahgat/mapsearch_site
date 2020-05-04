@@ -6,17 +6,14 @@
 
 <link href="//netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
 
-<h1>Map: {{ map.pk }}</h1>
+<h3>Map: <a href={{ map.url }}>{{ map.filename }}</a></h3>
 
 <ul class="nav nav-tabs">
-	<li {% if tab == 'about' %} class="active" {% endif %}>
-		<a class="nav-link" href="{% url 'map_view' map.pk 'about' %}">About</a>
+	<li {% if tab == 'layers' %} class="active" {% endif %}>
+		<a class="nav-link" href="{% url 'map_view' map.pk 'layers' %}">Digital Map</a>
 	</li>
 	<li {% if tab == 'georef' %} class="active" {% endif %}>
 		<a class="nav-link" href="{% url 'map_view' map.pk 'georef' %}">Georeferenced</a>
-	</li>
-	<li {% if tab == 'digi' %} class="active" {% endif %}>
-		<a class="nav-link" href="{% url 'map_view' map.pk 'digi' %}">Digitized</a>
 	</li>
 </ul>
 
