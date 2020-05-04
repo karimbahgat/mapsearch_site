@@ -32,6 +32,16 @@
 			</a>
 		</td>
 	</tr>
+	<tr>
+	<form id="search_map" action="{% url 'map_view' map.pk 'digi' %}" method="get">
+		<td>
+		<input class="form-control col-md-10" id="search" name="search" type="text" placeholder="Search map..." value="{{ request.GET.search }}">
+		</td>
+		<td>
+		<button class="btn btn-primary" id="search_button" type="submit">Search</button>
+		</td>
+	</form>
+	</tr>
 </table>
 
 <br><br>
@@ -87,14 +97,14 @@
 			map.fitBounds(imageBounds);
 		  };
 		  
-		  
 		  // refresh map render
 		  map.panBy([1,1]);
 		  map.invalidateSize();
+		  map.panBy([1,1]);
 		  
 		  // zoom and pan behavior
 		  map.options.zoomSnap = 0;
-		  //map.options.zoomDelta = 1;
+		  //map.options.zoomDelta = 0.1;
 		  map.options.wheelPxPerZoomLevel = 40; //40
 		  map.options.wheelDebounceTime = 80; //60
 		  map.options.maxBoundsViscosity = 1;
