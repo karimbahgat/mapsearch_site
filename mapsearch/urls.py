@@ -16,4 +16,6 @@ urlpatterns = [
     path('search/text/', views.search_text, name='search_text'),
     path('layer/add/', views.layer_add, name='layer_add'),
     path('layer/edit/<int:pk>/', views.layer_edit, name='layer_edit'),
+    path('layer/download/<int:pk>/trans/', views.layer_download_trans, name='layer_download_trans'),
+    path('layer/delete/<int:pk>/', views.layer_delete, name='layer_delete'),
 ]

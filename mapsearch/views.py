@@ -255,20 +255,42 @@ def layer_edit(request, pk):
         return render(request, 'templates/layer_edit.html', {'form':lyrform, 'layer':lyr, 'map':mapp, 'highlight':features})
 
     elif request.POST:
+        # update layer
+        print(request.POST)
+        post = request.POST.copy()
+        post.pop('features')
+        post['map'] = lyr.map.pk
+        lyrform = LayerForm(post, instance=lyr)
+        if not lyrform.is_valid():
+            print(post)
+            print(lyrform.errors)
+        lyrform.save()
         # add 'features' geojson as Feature instances
-        geoj = json.loads(request.POST['features'])
-        for feat in geoj['features']:
-            if lyr.features.filter(geom=json.dumps(feat['geometry'])):
-                # already exists, ignore
-                pass
-            else:
-                # new or changed
-                fobj = Feature(layer=lyr, geom=json.dumps(feat['geometry']))
-                fobj.save()
-                lyr.features.add(fobj)
+        if request.POST['features']:
+            geoj = json.loads(request.POST['features'])
+            for feat in geoj['features']:
+                if lyr.features.filter(geom=json.dumps(feat['geometry'])):
+                    # already exists, ignore
+                    pass
+                else:
+                    # new or changed
+                    fobj = Feature(layer=lyr, geom=json.dumps(feat['geometry']))
+                    fobj.save()
+                    lyr.features.add(fobj)
 
         # redirect to map layers view
-        return redirect('map_view', lyr.map.pk)
+        return redirect('map_view', lyr.map.pk, 'layers')
+
+# DELETE
+
+def layer_delete(request, pk):
+    lyr = Layer.objects.get(pk=pk)
+    
+    lyr.delete()
+
+    # redirect to map layers view
+    return redirect('map_view', lyr.map.pk, 'layers')
+    
 
 # UPDATE
 
@@ -381,12 +403,12 @@ def map_view(request, pk, tab=None):
     mapp = Map.objects.get(pk=pk)
     mapp.filename = os.path.basename(mapp.url)
     mappform = MapForm(instance=mapp)
-    tab = tab or 'layers'
+    tab = tab or 'map'
     context = {'map':mapp, 'form':mappform, 'tab':tab}
 
     # get highlight features if searching
     highlight = []
-    if tab == 'layers' and request.GET.get('search'):
+    if tab == 'map' and request.GET.get('search'):
          texts = [{'type':'Feature','properties':{'text':t.text},'geometry':json.loads(t.geom)} for t in
                     mapp.texts.filter(text__contains=request.GET['search'])]
          highlight.extend(texts)
@@ -394,13 +416,45 @@ def map_view(request, pk, tab=None):
 
     # get layers
     layers = []
-    if tab == 'layers':
+    if tab in ('map','layers'):
         layers = mapp.layers.all()
     context['layers'] = layers
          
     return render(request, 'templates/map_view_{}.html'.format(tab), context)
 
 # DOWNLOAD
+
+def layer_download_trans(request, pk):
+    import subprocess
+    import codecs
+    import io
+    import json
+
+    # find layer
+    lyr = Layer.objects.get(pk=pk)
+
+    # set args
+    geoj = lyr.to_geojson()
+    print(geoj)
+    transinfo = json.loads(lyr.map.transform)
+    trans = transinfo['forward']['model']
+    args = ["C:\Python27-64\python.exe", # python version
+            r"C:\Users\kimok\OneDrive\Documents\GitHub\mapsearch_site\mapsearch\coordtrans server.py", # georef program
+            json.dumps(geoj), # geoj
+            json.dumps(trans)] # transform
+    p = subprocess.run(args,
+                       capture_output=True,
+                       )
+    print('returncode')
+    print(repr(p.returncode))
+    #print('raw errors', p.stderr)
+    raw = p.stdout
+    #print('raw out', p.stdout)
+
+    # return
+    resp = HttpResponse(raw, content_type='application/json') 
+    resp['Content-Disposition'] = 'attachment; filename=map_{}_layer_{}.geojson'.format(lyr.map.pk, lyr.pk)
+    return resp
 
 def map_download_georef(request, pk):
     import subprocess

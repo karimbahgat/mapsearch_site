@@ -9,8 +9,11 @@
 <h3>Map: <a href={{ map.url }}>{{ map.filename }}</a></h3>
 
 <ul class="nav nav-tabs">
+	<li {% if tab == 'map' %} class="active" {% endif %}>
+		<a class="nav-link" href="{% url 'map_view' map.pk 'map' %}">Digital Map</a>
+	</li>
 	<li {% if tab == 'layers' %} class="active" {% endif %}>
-		<a class="nav-link" href="{% url 'map_view' map.pk 'layers' %}">Digital Map</a>
+		<a class="nav-link" href="{% url 'map_view' map.pk 'layers' %}">Map Layers</a>
 	</li>
 	<li {% if tab == 'georef' %} class="active" {% endif %}>
 		<a class="nav-link" href="{% url 'map_view' map.pk 'georef' %}">Georeferenced</a>

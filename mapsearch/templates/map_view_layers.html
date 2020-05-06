@@ -13,186 +13,120 @@
 
 <table style="width:100%; table-layout: fixed;">
 	<tr>
-		<td style="font-weight: bold;">Last Digitized:</td>
-		<td>{% if form.georeferenced.value %}
-				{{ form.georeferenced.value }}
-			{% else %}
-				Never
-			{% endif %}
+		<td style="font-weight: bold;">Num. Layers:</td>
+		<td>
+				{{ map.layers.all | length }}
 		</td>
 		<td></td>
 		<td></td>
 		<td>
-			<a href="" class="btn btn-primary">
-			{% if form.georeferenced.value %}
-				Run Again
-			{% else %}
-				Auto Detect
-			{% endif %}
+			<a href="{% url 'layer_add' %}?map={{ map.pk }}" class="btn btn-primary">
+				Add New Layer
 			</a>
 		</td>
 	</tr>
-	<tr>
-	<form id="search_map" action="{% url 'map_view' map.pk 'layers' %}" method="get">
-		<td>
-		<input class="form-control col-md-10" id="search" name="search" type="text" placeholder="Search map..." value="{{ request.GET.search }}">
-		</td>
-		<td>
-		<button class="btn btn-primary" id="search_button" type="submit">Search</button>
-		</td>
-	</form>
-	</tr>
-	
-	<tr>
-		<td style="font-style:italic; font-size:small; padding:10px">
-		{% if request.GET.search %}
-			Text results:
-			{{ highlight|length }}
-		{% endif %}
-		</td>
-	</tr>
-	
 </table>
-
-<div id="map_div">
-	{% block extra_assets %}
-	  {% leaflet_css %}
-	  {% leaflet_js %}
-	{% endblock %}
-
-	<script type="text/javascript">
-	
-	  var layout = {{ form.layout.value|safe }};
-	  var texts = [{% for text in map.texts.all %}
-			{'type': 'Feature',
-			'properties': {},
-			'geometry': {{ text.geom|safe }}
-			},
-		{% endfor %}
-	  ];
-	  var highlight = {{ highlight|geojsonfeature:':geometry'|safe }};
-	  
-	  function map_init(map, options) {
-		  // set to pixel crs
-		  map.options.crs = L.CRS.Simple;
-		  map.options.crs.transformation = new L.Transformation(1, 0, 1, 0);
-		  map.options.maxBounds = L.latLngBounds(L.latLng(-100000,-100000),L.latLng(100000,100000));
-		  map.options.minZoom = -10; 
-		  
-		  // add image overlay
-		  var imageBounds = [[0,0], [{{ form.height.value }},{{ form.width.value }}]];
-		  var imageUrl = '{{ form.url.value }}';
-		  var imglyr = L.imageOverlay(imageUrl, imageBounds);
-		  imglyr.addTo(map);
-		  		  
-		  // add layout layer
-		  var layoutlyr = L.geoJson(layout, {}).addTo(map);
-		  
-		  // add text layer
-		  var textlyr = L.geoJson(texts, {'color':'black'}).addTo(map);
-		  
-		  // add highlight layer
-		  var highlightlyr = L.geoJson(highlight, {'color':'yellow'}).addTo(map);
-		  
-		  // layers control
-		  var layersControl = L.control.layers({}, {'Map':imglyr, 'Layout':layoutlyr, 'Text':textlyr}, {collapsed:false}).addTo(map);
-		  
-		  // digitized layers
-		  {% for lyr in layers %}
-			lyrdata = {{ lyr.to_geojson|safe }};
-			leaflayer = L.geoJson(lyrdata, {}).addTo(map);
-			var name = {% firstof lyr.name lyr.pk %}
-			layersControl.addOverlay(leaflayer, name);
-		  {% endfor %}
-		  
-		  // zoom and pan behavior
-		  map.options.zoomSnap = 0;
-		  //map.options.zoomDelta = 0.1;
-		  map.options.wheelPxPerZoomLevel = 40; //40
-		  map.options.wheelDebounceTime = 80; //60
-		  map.options.maxBoundsViscosity = 1;
-		  
-		  // zoom to extent
-		  //alert(highlightlyr.getBounds().toBBoxString());
-		  if (highlightlyr.getBounds().isValid()) {
-			highlightBounds = highlightlyr.getBounds();
-			map.fitBounds(highlightBounds);
-			map.zoomOut();
-		  } else {
-			map.fitBounds(imageBounds);
-		  };
-	  }
-	</script>
-
-	{% leaflet_map "layers_map" callback="window.map_init" %}
-	
-	<style>
-    .leaflet-container {  /* all maps */
-        height: 600px;
-    }
-	</style>
-
-</div>
 
 <br>
 
+{% block extra_assets %}
+  {% leaflet_css %}
+  {% leaflet_js %}
+{% endblock %}
+
+{% for lyr in layers %}
+
 <div class="alert alert-dark" role="alert">
-<h4 class="alert-heading">Layers</h4>
-<table style="width:100%" class="table table-dark">
-	<tr>
-		<th>Symbol</th>
-		<th>Name</th>
-		<th>Geometry</th>
-		<th>Description</th>
-		<th>Comment</th>
-		<th></th>
-	</tr>
-	{% for lyr in layers %}
-	<tr>
-		<td><img src="https://cdn2.iconfinder.com/data/icons/geometry-outline/60/42_-Geometric_Form-_geometry_shape_form_drawing-512.png" height=20px style="filter: invert(1)"></td>
-		<td style="font-weight: bold; padding:5px">{{ lyr.name }}</td>
-		<td>{{ lyr.type }}</td>
-		<td>[Description...]</td>
-		<td>{{ lyr.comment }}</td>
-		<td>
-		<a href="{% url 'layer_edit' lyr.pk %}">
-		<img src="https://cdn2.iconfinder.com/data/icons/flat-ui-icons-24-px/24/new-24-512.png" height=20px style="filter: invert(1)">
-		</td>
-	</tr>
-	{% endfor %}
-</table>
-<div style="width:100%; text-align:center">
-<a href="{% url 'layer_add' %}?map={{ map.pk }}" class="btn btn-primary">
-	Add New Layer
-</a>
-</div>
+	<div style="width:60%; display:inline-block; vertical-align:top">
+		<h4 class="alert-heading">
+			Layer {{ forloop.counter }}: {{ lyr.name }}
+			<a href="{% url 'layer_edit' lyr.pk %}" style="padding-left:10px">
+				<img src="https://cdn2.iconfinder.com/data/icons/flat-ui-icons-24-px/24/new-24-512.png" height=20px>
+			</a>
+			<a href="{% url 'layer_download_trans' lyr.pk %}" style="padding-left:10px">
+				<img src="https://cdn1.iconfinder.com/data/icons/arrows-vol-1-4/24/download_1-512.png" height=25px>
+			</a>
+			<a href="{% url 'layer_delete' lyr.pk %}" style="padding-left:10px">
+				<img src="https://cdn4.iconfinder.com/data/icons/complete-common-version-6-4/1024/trash-512.png" height=20px>
+			</a>
+		</h4>
+		<table style="width:100%;" class="table">
+			<tr>
+				<td style="font-weight:bold;">Geometry Type:</td>
+				<td>{{ lyr.type }}</td>
+			</tr>
+			<tr>
+				<td style="font-weight:bold;">Legend Symbol:</td>
+				<td><img src="https://cdn2.iconfinder.com/data/icons/geometry-outline/60/42_-Geometric_Form-_geometry_shape_form_drawing-512.png" height=20px>
+				</td>
+			</tr>
+			<tr>
+				<td style="font-weight:bold;">Description:</td>
+				<td>{{ lyr.legend_description }}</td>
+			</tr>
+			<tr>
+				<td style="font-weight:bold;">Features:</td>
+				<td>{{ lyr.features.all.count }}</td>
+			</tr>
+		</table>
+		{% if lyr %}
+			* <em>{{ lyr.comment }}</em>
+		{% endif %}
+	</div>
+
+	<div id="map_div_{{ forloop.counter }}" style="width:38%; display:inline-block;">
+
+		<script type="text/javascript">
+
+		  var lyrdata_{{ forloop.counter }} = {{ lyr.to_geojson|safe }};
+		  
+		  function map_init_{{ forloop.counter }}(map, options) {
+			  // set to pixel crs
+			  map.options.crs = L.CRS.Simple;
+			  map.options.crs.transformation = new L.Transformation(1, 0, 1, 0);
+			  map.options.maxBounds = L.latLngBounds(L.latLng(-100000,-100000),L.latLng(100000,100000));
+			  map.options.minZoom = -10; 
+			  
+			  // add image overlay
+			  var imageBounds = [[0,0], [{{ form.height.value }},{{ form.width.value }}]];
+			  var imageUrl = '{% url "map_download_thumb" map.pk %}';
+			  var imglyr = L.imageOverlay(imageUrl, imageBounds);
+			  imglyr.addTo(map);
+			  
+			  // add layer data
+			  leaflayer = L.geoJson(lyrdata_{{ forloop.counter }}, {}).addTo(map);
+			  
+			  // zoom and pan behavior
+			  map.options.zoomSnap = 0;
+			  //map.options.zoomDelta = 0.1;
+			  map.options.wheelPxPerZoomLevel = 40; //40
+			  map.options.wheelDebounceTime = 80; //60
+			  map.options.maxBoundsViscosity = 1;
+			  
+			  // zoom to extent
+			  map.fitBounds(imageBounds);
+		  }
+		</script>
+
+		{% with countstr=forloop.counter|stringformat:"s" %}
+		{% with mapname="layers_map_"|add:countstr initfunc="window.map_init_"|add:countstr %}
+			{% leaflet_map mapname callback=initfunc %}
+		{% endwith %}
+		{% endwith %}
+
+		<style>
+		.leaflet-container { 
+			min-width: 200px;
+			min-height: 200px;
+			height: 200px;
+		}
+		</style>
+	</div>
 
 </div>
 
-<div class="alert alert-info" role="alert">
-<h4 class="alert-heading">About This Map</h4>
-<table style="width:100%">
-	<tr>
-		<td style="font-weight: bold; padding:5px">URL:</td>
-		<td><a href={{ map.url }}>{{ map.url }}</a></td>
-		<td><a href="{% url 'map_update_about' map.pk %}" class="btn btn-primary">
-			Update Info
-			</a></td>
-	</tr>
-		<tr>
-		<td style="font-weight: bold; padding:5px">Dimensions:</td>
-		<td>{{ map.width }} x {{ map.height }}</td>
-	</tr>
-</table>
-</div> 
+{% endfor %}
 
-<div class="alert alert-info" role="alert" style="display:none">
-<table style="width:100%">
-	<tr>
-		<td style="font-weight: bold; vertical-align:top">Layout:</td>
-		<td>{{ form.layout }}</td>
-	</tr>
-</table>
-</div> 
+<br>
 
 {% endblock %}
