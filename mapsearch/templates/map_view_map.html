@@ -33,7 +33,7 @@
 		</td>
 	</tr>
 	<tr>
-	<form id="search_map" action="{% url 'map_view' map.pk 'layers' %}" method="get">
+	<form id="search_map" action="{% url 'map_view' map.pk 'map' %}" method="get">
 		<td>
 		<input class="form-control col-md-10" id="search" name="search" type="text" placeholder="Search map..." value="{{ request.GET.search }}">
 		</td>
@@ -83,10 +83,11 @@
 		  var imageBounds = [[0,0], [{{ form.height.value }},{{ form.width.value }}]];
 		  var imageUrl = '{{ form.url.value }}';
 		  var imglyr = L.imageOverlay(imageUrl, imageBounds);
+		  imglyr.setOpacity(0.4);
 		  imglyr.addTo(map);
 		  		  
 		  // add layout layer
-		  var layoutlyr = L.geoJson(layout, {}).addTo(map);
+		  var layoutlyr = L.geoJson(layout, {'color':'black','fill':null}).addTo(map);
 		  
 		  // add text layer
 		  var textlyr = L.geoJson(texts, {'color':'black'}).addTo(map);
@@ -98,11 +99,59 @@
 		  var layersControl = L.control.layers({}, {'Map':imglyr, 'Layout':layoutlyr, 'Text':textlyr}, {collapsed:false}).addTo(map);
 		  
 		  // digitized layers
+		  // colors from colorbrewer: https://colorbrewer2.org/#type=qualitative&scheme=Paired&n=12
+		  var colors = ['rgb(31,120,180)',
+						'rgb(227,26,28)',
+						'rgb(51,160,44)',
+						'rgb(255,127,0)',
+						'rgb(106,61,154)',
+						'rgb(177,89,40)',
+						
+						'rgb(166,206,227)',
+						'rgb(251,154,153)',
+						'rgb(178,223,138)',
+						'rgb(253,191,111)',
+						'rgb(202,178,214)',
+						'rgb(255,255,153)'];
 		  {% for lyr in layers %}
 			lyrdata = {{ lyr.to_geojson|safe }};
-			leaflayer = L.geoJson(lyrdata, {}).addTo(map);
-			var name = '{% firstof lyr.name lyr.pk %}';
-			layersControl.addOverlay(leaflayer, name);
+			
+			// color
+			var color = colors[{{ forloop.counter0 }}];
+			
+			// custom icon
+			var markerHtmlStyle = `
+				  background-color: ${color};
+				  width: 2rem;
+				  height: 2rem;
+				  display: block;
+				  left: -1rem;
+				  top: -1rem;
+				  position: relative;
+				  border-radius: 2rem 2rem 0;
+				  transform: rotate(45deg);
+				  border: 0.5px solid #FFFFFF`
+			var coloredIcon = L.divIcon({
+				  className: "my-custom-pin",
+				  iconAnchor: [0, 24],
+				  labelAnchor: [-6, 0],
+				  popupAnchor: [0, -36],
+				  html: `<span style="${markerHtmlStyle}" />`
+			});
+			
+			// load as geojson with style
+			var style = {'color':color,
+						 'pointToLayer': function (feature, latlng) {
+												return L.marker(latlng, {icon: coloredIcon});
+											}
+						};
+			leaflayer = L.geoJson(lyrdata, {'color':color}).addTo(map);
+			
+			// legend entry
+			var name = '{{ forloop.counter }} - ' + '{{ lyr.name }}';
+			var legendEntry = '<div style="display:inline-block; width:10px; height:10px; margin-right:5px; background-color:'+color+'"></div>' + name;
+			
+			layersControl.addOverlay(leaflayer, legendEntry);
 		  {% endfor %}
 		  
 		  // zoom and pan behavior
