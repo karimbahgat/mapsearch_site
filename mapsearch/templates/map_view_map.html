@@ -11,27 +11,22 @@
 
 <br>
 
-<table style="width:100%; table-layout: fixed;">
+<table style="width:100%">
 	<tr>
-		<td style="font-weight: bold;">Last Digitized:</td>
-		<td>{% if form.georeferenced.value %}
-				{{ form.georeferenced.value }}
-			{% else %}
-				Never
-			{% endif %}
-		</td>
-		<td></td>
-		<td></td>
-		<td>
-			<a href="" class="btn btn-primary">
-			{% if form.georeferenced.value %}
-				Run Again
-			{% else %}
-				Auto Detect
-			{% endif %}
+		<td style="font-weight: bold; padding:5px">Map Size:</td>
+		<td>{{ map.width }} x {{ map.height }} pixels</td>
+	</tr>
+	<tr>
+		<td style="font-weight: bold; padding:5px">Source Link:</td>
+		<td><a href={{ map.url }}>{{ map.url }}</a></td>
+		<td><a href="{% url 'map_update_about' map.pk %}" class="btn btn-primary">
+			Update Info
 			</a>
 		</td>
 	</tr>
+</table>
+
+<table style="width:100%; table-layout: fixed; margin-top:10px">
 	<tr>
 	<form id="search_map" action="{% url 'map_view' map.pk 'map' %}" method="get">
 		<td>
@@ -40,6 +35,9 @@
 		<td>
 		<button class="btn btn-primary" id="search_button" type="submit">Search</button>
 		</td>
+		<td></td>
+		<td></td>
+		<td></td>
 	</form>
 	</tr>
 	
@@ -183,32 +181,15 @@
 
 </div>
 
+<table style="width:100%; table-layout: fixed; margin:10px;">
+	<tr>
+		<td><b>Last Indexed:</b>
+		{{ map.created }}</td>
+		<td></td>
+		<td></td>
+	</tr>
+</table>
+
 <br>
-
-<div class="alert alert-info" role="alert">
-<h4 class="alert-heading">About This Map</h4>
-<table style="width:100%">
-	<tr>
-		<td style="font-weight: bold; padding:5px">URL:</td>
-		<td><a href={{ map.url }}>{{ map.url }}</a></td>
-		<td><a href="{% url 'map_update_about' map.pk %}" class="btn btn-primary">
-			Update Info
-			</a></td>
-	</tr>
-		<tr>
-		<td style="font-weight: bold; padding:5px">Dimensions:</td>
-		<td>{{ map.width }} x {{ map.height }}</td>
-	</tr>
-</table>
-</div> 
-
-<div class="alert alert-info" role="alert" style="display:none">
-<table style="width:100%">
-	<tr>
-		<td style="font-weight: bold; vertical-align:top">Layout:</td>
-		<td>{{ form.layout }}</td>
-	</tr>
-</table>
-</div> 
 
 {% endblock %}

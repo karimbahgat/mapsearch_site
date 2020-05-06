@@ -29,6 +29,15 @@
 
 <br>
 
+{% if not layers %}
+
+<div style="width:100%; text-align:center">
+<em>This map has not been digitized yet</em>
+<div>
+
+{% endif %}
+
+
 {% block extra_assets %}
   {% leaflet_css %}
   {% leaflet_js %}
