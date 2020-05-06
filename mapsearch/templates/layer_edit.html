@@ -14,21 +14,21 @@
 
 <div class="alert alert-dark" role="alert">
 <h4>Layer Information:</h4>
-<form action="{% url 'layer_edit' form.initial.id %}" method="post">
+<form action="{% url 'layer_edit' form.initial.id %}" method="post" style="margin-bottom:0">
 {% csrf_token %}
-<table style="width:100%; table-layout: fixed;">
+<table style="width:100%; table-layout: fixed; margin:10px">
 	<tr>
 		<th>Name</th>
 		<th>Type</th>
 		<th>Comment</th>
 	</tr>
 	<tr>
-		<td style="font-weight: bold; padding:5px">{{ form.name }}</td>
+		<td style="font-weight: bold">{{ form.name }}</td>
 		<td>{{ form.type }}</td>
 		<td>{{ form.comment }}</td>
 	</tr>
 </table>
-<table style="width:100%; table-layout: fixed;">
+<table style="width:100%; table-layout: fixed; margin:10px">
 	<tr>
 		<th>Legend Symbol</th>
 		<th>Legend Description</th>
@@ -125,16 +125,9 @@
 			  color: 'yellow'
 			 },
 			},
-			rect: {
-			 shapeOptions: {
-			  color: 'yellow'
-			 },
-			},
-			circle: {
-			 shapeOptions: {
-			  color: 'yellow'
-			 },
-			},
+			rectangle: false,
+			circle: false,
+			circlemarker: false,
 		   },
           edit: {
              featureGroup: drawnItems
