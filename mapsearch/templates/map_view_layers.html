@@ -65,16 +65,34 @@ var colors = ['rgb(31,120,180)',
 <div class="alert alert-dark" role="alert">
 	<div style="width:60%; display:inline-block; vertical-align:top">
 		<h4 class="alert-heading">
+			<table>
+			<tr>
+			<td>
 			Layer {{ forloop.counter }}: {{ lyr.name }}
+			</td>
+			<td>
 			<a href="{% url 'layer_edit' lyr.pk %}" style="padding-left:10px">
 				<img src="https://cdn2.iconfinder.com/data/icons/flat-ui-icons-24-px/24/new-24-512.png" height=20px>
 			</a>
-			<a href="{% url 'layer_download_trans' lyr.pk %}" style="padding-left:10px">
-				<img src="https://cdn1.iconfinder.com/data/icons/arrows-vol-1-4/24/download_1-512.png" height=25px>
-			</a>
+			</td>
+			<td>
+			<div class="dropdown show" style="inline-block; padding-left:10px">
+			    <div class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					<img src="https://cdn1.iconfinder.com/data/icons/arrows-vol-1-4/24/download_1-512.png" height=25px>
+				</div>
+			  <div class="dropdown-menu">
+				<a class="dropdown-item" href="{% url 'layer_download_orig' lyr.pk %}">Original</a>
+				<a class="dropdown-item" href="{% url 'layer_download_trans' lyr.pk %}">Transformed</a>
+			  </div>
+			</div>
+			</td>
+			<td>
 			<a href="{% url 'layer_delete' lyr.pk %}" style="padding-left:10px">
 				<img src="https://cdn4.iconfinder.com/data/icons/complete-common-version-6-4/1024/trash-512.png" height=20px>
 			</a>
+			</td>
+			</tr>
+			</table>
 		</h4>
 		<table style="width:100%;" class="table">
 			<tr>

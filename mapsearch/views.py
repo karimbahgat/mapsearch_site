@@ -424,6 +424,25 @@ def map_view(request, pk, tab=None):
 
 # DOWNLOAD
 
+def layer_download_orig(request, pk):
+    import subprocess
+    import codecs
+    import io
+    import json
+
+    # find layer
+    lyr = Layer.objects.get(pk=pk)
+
+    # set args
+    geoj = lyr.to_geojson()
+    print(geoj)
+    raw = json.dumps(geoj)
+
+    # return
+    resp = HttpResponse(raw, content_type='application/json') 
+    resp['Content-Disposition'] = 'attachment; filename=map_{}_layer_{}_orig.geojson'.format(lyr.map.pk, lyr.pk)
+    return resp
+
 def layer_download_trans(request, pk):
     import subprocess
     import codecs
@@ -453,7 +472,7 @@ def layer_download_trans(request, pk):
 
     # return
     resp = HttpResponse(raw, content_type='application/json') 
-    resp['Content-Disposition'] = 'attachment; filename=map_{}_layer_{}.geojson'.format(lyr.map.pk, lyr.pk)
+    resp['Content-Disposition'] = 'attachment; filename=map_{}_layer_{}_trans.geojson'.format(lyr.map.pk, lyr.pk)
     return resp
 
 def map_download_georef(request, pk):
