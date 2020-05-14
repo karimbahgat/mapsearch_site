@@ -243,22 +243,12 @@ def layer_add(request):
 def layer_edit(request, pk):
     lyr = Layer.objects.get(pk=pk)
 
-    if not request.POST:
-        lyrform = LayerForm(instance=lyr)
-        features = [feat #json.dumps({'type':'Feature', 'properties':{}, 'geometry':json.loads(feat.geom)})
-                    for feat in lyr.features.all()]
-
-        mapp = lyr.map
-        mapp.filename = os.path.basename(mapp.url)
-
-        # redirect to layer edit
-        return render(request, 'templates/layer_edit.html', {'form':lyrform, 'layer':lyr, 'map':mapp, 'highlight':features})
-
-    elif request.POST:
+    if request.POST:
         # update layer
         print(request.POST)
         post = request.POST.copy()
         post.pop('features')
+        post.pop('legend_description') # temp...
         post['map'] = lyr.map.pk
         lyrform = LayerForm(post, instance=lyr)
         if not lyrform.is_valid():
@@ -280,6 +270,18 @@ def layer_edit(request, pk):
 
         # redirect to map layers view
         return redirect('map_view', lyr.map.pk, 'layers')
+
+    else:
+        # GET
+        lyrform = LayerForm(instance=lyr)
+        features = [feat #json.dumps({'type':'Feature', 'properties':{}, 'geometry':json.loads(feat.geom)})
+                    for feat in lyr.features.all()]
+
+        mapp = lyr.map
+        mapp.filename = os.path.basename(mapp.url)
+
+        # redirect to layer edit
+        return render(request, 'templates/layer_edit.html', {'form':lyrform, 'layer':lyr, 'map':mapp, 'highlight':features})
 
 # DELETE
 

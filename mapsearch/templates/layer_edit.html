@@ -14,7 +14,7 @@
 
 <div class="alert alert-dark" role="alert">
 <h4>Layer Information:</h4>
-<form action="{% url 'layer_edit' form.initial.id %}" method="post" style="margin-bottom:0">
+<form id="id_layerform" action="{% url 'layer_edit' form.initial.id %}" method="post" style="margin-bottom:0">
 {% csrf_token %}
 <table style="width:100%; table-layout: fixed; margin:10px">
 	<tr>
@@ -23,26 +23,154 @@
 		<th>Comment</th>
 	</tr>
 	<tr>
-		<td style="font-weight: bold">{{ form.name }}</td>
+		<td style="font-weight: bold">Show input & abc button if none, otherwise show hyperlinked text linking to text obj popup{{ form.name }}</td>
 		<td>{{ form.type }}</td>
 		<td>{{ form.comment }}</td>
 	</tr>
 </table>
 <table style="width:100%; table-layout: fixed; margin:10px">
 	<tr>
-		<th>Legend Symbol</th>
 		<th>Legend Description</th>
+		<th>Legend Symbol</th>
 		<th></th>
 	</tr>
 	<tr>
-		<td>{{ form.legend_symbol }}</td>
-		<td>{{ form.legend_description }}</td>
+		<td>
+			<p><a href="">Description if not empty...</a></p>
+			<input id="id_legend_description" name="legend_description" type="hidden">
+			<script>
+				var map = window.map;
+				
+				function drawtext_start(){
+					//alert('drawtext start');
+					var stopclick = false; //to prevent more than one click listener
+					var rect = new L.Draw.Rectangle(map, {shapeOptions: {
+																showArea: true,
+																color: '#FFF'
+																}
+															}
+														);
+					rect.enable();
+					map.on('draw:created', drawtext_create);
+				};
+				
+				function drawtext_create(e){
+					//alert('drawtext create');
+					drawtext_popup(e);
+				};
+				
+				function drawtext_popup(e){
+					//alert('drawtext popup');
+					// create geojson for
+					var bounds = e.layer.getBounds();
+					var latlng = bounds.getSouthWest();
+					var content = '<div><input type="hidden" id="id_drawtext_geom" value='+"'"+JSON.stringify(e.layer.toGeoJSON())+"'"+'><input id="id_drawtext_text" type="text"><button onclick="drawtext_finish();">Add</button></div>';
+					var popup = L.popup({closeOnClick:false});
+					popup.setLatLng(latlng);
+					popup.setContent(content);
+					map.openPopup(popup);
+					//popup.addTo(map);
+					//popup.openOn(map);
+					document.getElementById("id_drawtext_text").focus();
+				};
+				
+				function drawtext_finish(){
+					//alert('drawtext finish');
+					// get geometry
+					var geoj = JSON.parse(document.getElementById("id_drawtext_geom").value);
+					// set properties
+					geoj.properties.text = document.getElementById("id_drawtext_text").value;
+					// add to existing textlyr
+					alert(JSON.stringify(geoj));
+					window.textlyr.addData(geoj);
+					// run onfinish func
+					document.getElementById("id_legend_description").value = JSON.stringify(geoj);
+					// exit
+					map.off('draw:created', drawtext_create);
+					map.closePopup();
+				};
+			</script>
+			<button type="button" onclick="selecttext();">Select Text</button>
+			<button type="button" onclick="drawtext_start();">Draw Text</button>
+		</td>
+		<td>
+			<input id="id_legend_symbol" name="legend_symbol" value="{{ layer.legend_symbol|safe }}" type="hidden">
+			<script>
+				// see example:
+				// https://northlandia.wordpress.com/2015/03/27/leaflet-draw-implementing-custom-tools/
+				
+				var map = window.map;
+				
+				function drawsymbol_start(){
+					//alert('drawsymbol start');
+					var stopclick = false; //to prevent more than one click listener
+					var rect = new L.Draw.Rectangle(map, {shapeOptions: {
+																showArea: true,
+																color: '#FFF'
+																}
+															}
+														);
+					rect.enable();
+					map.on('draw:created', drawsymbol_create);
+				};
+				
+				function drawsymbol_edit(){
+					//alert('drawsymbol edit');
+					// first delete existing
+					// ...
+					drawsymbol_start();
+				};
+				
+				function drawsymbol_create(e){
+					//alert('drawsymbol create');
+					drawsymbol_finish(e);
+				};
+				
+				function drawsymbol_finish(e){
+					//alert('drawsymbol finish');
+					var data = e.layer.toGeoJSON();
+					document.getElementById("id_legend_symbol").value = JSON.stringify(data);
+					map.off('draw:created', drawsymbol_create);
+					drawsymbol_update_buttons();
+				};
+				
+				function drawsymbol_update_buttons(){
+					//alert('drawsymbol update buttons');
+					var drawbut = document.getElementById("id_legend_symbol_drawbut");
+					var editbut = document.getElementById("id_legend_symbol_editbut");
+					if (document.getElementById("id_legend_symbol").value) {
+						drawbut.style.display = 'none';
+						editbut.style.display = null;
+					} else {
+						drawbut.style.display = null;
+						editbut.style.display = 'none';
+					};
+				};
+			</script>
+			
+			<button id="id_legend_symbol_editbut" type="button" onclick="drawsymbol_edit();" style="{% if layer.legend_symbol %}{% else %}display:none{% endif %}">
+			Edit
+			</button>
+			
+			<button id="id_legend_symbol_drawbut" type="button" onclick="drawsymbol_start();" style="{% if layer.legend_symbol %}display:none{% else %}{% endif %}">
+			Draw
+			</button>
+		</td>
 		<td></td>
 	</tr>
 </table>
 <div style="text-align:right">
-	<input id="drawnData" name="features" value="" type="hidden">
-	<button class="btn btn-primary" type="submit">
+	<input id="id_features" name="features" value="" type="hidden">
+	<script>
+		function submitform() {
+			// get features data
+			var data = window.drawnItems.toGeoJSON();
+			document.getElementById("id_features").value = JSON.stringify(data);
+			// submit form
+			document.getElementById("id_layerform").submit();
+		};
+	</script>
+	<button id="id_submitform" class="btn btn-primary" type="button" onclick="submitform();">
 	Finish
 	</button>
 	or
@@ -75,6 +203,9 @@
 					{% endfor %}];
 	  
 	  function map_init(map, options) {
+		  // remember
+		  window.map = map;
+		  
 		  // set to pixel crs
 		  map.options.crs = L.CRS.Simple;
 		  map.options.crs.transformation = new L.Transformation(1, 0, 1, 0);
@@ -89,6 +220,7 @@
 		  
 		  // add text layer
 		  var textlyr = L.geoJson(texts, {'color':'black'}).addTo(map);
+		  window.textlyr = textlyr;
 		  
 		  // add highlight layer
 		  var highlight = {{ layer.to_geojson|safe }};
@@ -136,13 +268,13 @@
 		  map.addControl(drawControl);
 		  
 		  // add when drawn
-		  map.on('draw:created', function (e) {
+		  window.drawfeature = function (e) {
+		    alert('drawfeature');
             var type = e.layerType;
             var layer = e.layer;
             drawnItems.addLayer(layer);
-			var data = window.drawnItems.toGeoJSON();
-			document.getElementById("drawnData").value = JSON.stringify(data);
-		  });
+		  };
+		  //map.on('draw:created', window.drawfeature);
 	  }
 	</script>
 
@@ -159,7 +291,9 @@
 <br>
 
 <div class="alert alert-dark" role="alert" style="margin-left:20px">
-<h4 class="alert-heading">Features:</h4>
+<h4 class="alert-heading">Features:
+<button>New Feature</button>
+</h4>
 <table style="width:100%" class="table table-dark">
 	<tr>
 		<th></th>
