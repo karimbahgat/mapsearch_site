@@ -77,11 +77,16 @@
 		  map.options.maxBounds = L.latLngBounds(L.latLng(-100000,-100000),L.latLng(100000,100000));
 		  map.options.minZoom = -10; 
 		  
+		  // remove existing layers (osm tiles)
+		  map.eachLayer(function(layer){
+			map.removeLayer(layer);
+		  });
+		  
 		  // add image overlay
 		  var imageBounds = [[0,0], [{{ form.height.value }},{{ form.width.value }}]];
 		  var imageUrl = '{{ form.url.value }}';
 		  var imglyr = L.imageOverlay(imageUrl, imageBounds);
-		  imglyr.setOpacity(0.4);
+		  //imglyr.setOpacity(0.4);
 		  imglyr.addTo(map);
 		  		  
 		  // add layout layer
