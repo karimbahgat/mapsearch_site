@@ -17,7 +17,6 @@
 	
 	function drawtext_start(onfinish){
 		//alert('drawtext start');
-		var stopclick = false; //to prevent more than one click listener
 		var rect = new L.Draw.Rectangle(map, {shapeOptions: {
 													showArea: true,
 													color: '#FFF'
@@ -99,6 +98,89 @@
 		// set button onclick func
 		document.getElementById("id_selecttext_finishbut").addEventListener("click", selecttext_finish);
 	};
+	
+	// geom drawing
+	
+	function drawgeom_start(onfinish){
+		//alert('drawgeom start');
+		var templyr = L.geoJSON();
+		map.addLayer(templyr);
+		var geomtype = document.getElementById("id_type").value;
+		if (geomtype == 'Point') {
+			var drawer = new L.Draw.Rectangle(map, {shapeOptions: {
+														showArea: true,
+														//color: '#FFF'
+														}
+													}
+												);
+		} else if (geomtype == 'LineString') {
+			var drawer = new L.Draw.Polyline(map, {shapeOptions: {
+														showArea: true,
+														//color: '#FFF'
+														}
+													}
+												);
+		} else {
+			var drawer = new L.Draw.Polygon(map, {shapeOptions: {
+														showArea: true,
+														//color: '#FFF'
+														}
+													}
+												);
+		};
+		drawer.enable();
+		function drawgeom_create_wrap(e){
+			map.off('draw:created', drawgeom_create_wrap);
+			drawgeom_create(e, templyr, onfinish);
+		};
+		map.on('draw:created', drawgeom_create_wrap);
+	};
+	
+	function drawgeom_edit(){
+		//alert('drawgeom edit');
+		// first delete existing
+		// ...
+		drawgeom_start();
+	};
+	
+	function drawgeom_create(e, templyr, onfinish){
+		//alert('drawgeom create');
+		var geoj = e.layer.toGeoJSON();
+		templyr.addData(geoj);
+		drawgeom_popup(e, templyr, onfinish);
+	};
+	
+	function drawgeom_popup(e, templyr, onfinish){
+		//alert('drawgeom popup');
+		// define finish func
+		function drawgeom_finish(){
+			alert('drawgeom finish');
+			// run onfinish func
+			onfinish();
+			// exit
+			drawgeom_cancel();
+		};
+		// define cancel func
+		function drawgeom_cancel(){
+			//alert('drawgeom finish');
+			// clear prev drawn geometries
+			templyr.clearLayers();
+			// exit
+			map.closePopup();
+		};
+		// define popup
+		var content = '<div><h4>New Feature</h4><h5>Geometries</h5><input type="hidden" id="id_drawgeom_geom" value='+"'"+JSON.stringify(templyr.toGeoJSON())+"'"+'><button id="id_drawgeom_addbut">Add Geometry</button><h5>Label</h5><button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button><button type="button" onclick="drawtext_start(new_legend_description);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button><p><button id="id_drawgeom_finishbut" class="btn btn-primary" type="button">Save</button><button id="id_drawgeom_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></div>';
+		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true});
+		popup.setContent(content);
+		// open popup at location
+		var bounds = e.layer.getBounds();
+		var latlng = bounds.getSouthWest();
+		popup.setLatLng(latlng);
+		map.openPopup(popup);
+		// set button onclick func
+		document.getElementById("id_drawgeom_finishbut").addEventListener("click", drawgeom_finish);
+		document.getElementById("id_drawgeom_cancelbut").addEventListener("click", drawgeom_cancel);
+	};
 </script>
 
 <h3>Now Editing Layer: {{ layer.name }}</h3>
@@ -115,7 +197,7 @@
 		<th>Comment</th>
 	</tr>
 	<tr>
-		<td style="font-weight: bold">Show input & abc button if none, otherwise show hyperlinked text linking to text obj popup{{ form.name }}</td>
+		<td style="font-weight: bold">{{ form.name }}</td>
 		<td>{{ form.type }}</td>
 		<td>{{ form.comment }}</td>
 	</tr>
@@ -156,10 +238,15 @@
 					document.getElementById("id_legend_description").value = JSON.stringify(geoj);
 					// update text
 					document.getElementById("id_legend_description_display").textContent = geoj.properties.text;
+					// hide custom name
+					document.getElementById("id_name").value = geoj.properties.text;
+					//document.getElementById("id_name").style.display = 'none';
+					// scroll back up
+					document.getElementById("id_layerform").scrollIntoView();
 				};
 			</script>
-			<button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);">Select Text</button>
-			<button type="button" onclick="drawtext_start(new_legend_description);">Draw Text</button>
+			<button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button>
+			<button type="button" onclick="drawtext_start(new_legend_description);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button>
 		</td>
 		<td>
 			<input id="id_legend_symbol" name="legend_symbol" value="{{ layer.legend_symbol|safe }}" type="hidden">
@@ -232,7 +319,7 @@
 	<script>
 		function submitform() {
 			// get features data
-			var data = window.drawnItems.toGeoJSON();
+			var data = window.featureslyr.toGeoJSON();
 			document.getElementById("id_features").value = JSON.stringify(data);
 			// submit form
 			document.getElementById("id_layerform").submit();
@@ -266,9 +353,6 @@
 			},
 		{% endfor %}
 	  ];
-	  var highlight = [{% for feat in highlight %}
-						{{ feat.to_geojson|safe }},
-					{% endfor %}];
 	  
 	  function map_init(map, options) {
 		  // remember
@@ -295,12 +379,13 @@
 		  var textlyr = L.geoJson(texts, {'color':'black'}).addTo(map);
 		  window.textlyr = textlyr;
 		  
-		  // add highlight layer
-		  var highlight = {{ layer.to_geojson|safe }};
-		  var highlightlyr = L.geoJson(highlight, {'color':'yellow'}).addTo(map);
+		  // add features layer
+		  var features = {{ layer.to_geojson|safe }};
+		  var featureslyr = L.geoJson(features, {color:'green'}).addTo(map);
+		  window.featureslyr = featureslyr;
 		  
 		  // layers control
-		  var layersControl = L.control.layers({}, {'Map':imglyr, 'Text':textlyr}, {collapsed:false}).addTo(map);
+		  var layersControl = L.control.layers({}, {'Map':imglyr, 'Text':textlyr, 'Layer Features':featureslyr}, {collapsed:false}).addTo(map);
 		  
 		  // zoom and pan behavior
 		  map.options.zoomSnap = 0;
@@ -311,43 +396,6 @@
 		  
 		  // zoom to extent
 		  map.fitBounds(imageBounds);
-		  
-		  // drawing group
-		  var drawnItems = L.featureGroup([highlightlyr]).addTo(map);
-		  layersControl.addOverlay(drawnItems, 'Layer Features');
-		  window.drawnItems = drawnItems; 
-		  // drawing controls
-		  //map.options.drawControl = true;
-		  var drawControl = new L.Control.Draw({
-		  draw: {
-			polygon: {
-			 shapeOptions: {
-			  color: 'yellow'
-			 },
-			},
-			polyline: {
-			 shapeOptions: {
-			  color: 'yellow'
-			 },
-			},
-			rectangle: false,
-			circle: false,
-			circlemarker: false,
-		   },
-          edit: {
-             featureGroup: drawnItems
-          }
-		  });
-		  map.addControl(drawControl);
-		  
-		  // add when drawn
-		  window.drawfeature = function (e) {
-		    alert('drawfeature');
-            var type = e.layerType;
-            var layer = e.layer;
-            drawnItems.addLayer(layer);
-		  };
-		  //map.on('draw:created', window.drawfeature);
 	  }
 	</script>
 
@@ -363,9 +411,20 @@
 
 <br>
 
-<div class="alert alert-dark" role="alert" style="margin-left:20px">
-<h4 class="alert-heading">Features:
-<button>New Feature</button>
+<div class="alert alert-dark" role="alert">
+<script>
+	var map = window.map;
+	
+	function new_feature(){
+		// get geometry
+		var geoj = JSON.parse(document.getElementById("id_drawgeom_geom").value);
+		// add to existing feature lyr
+		window.featureslyr.addData(geoj);
+	};
+</script>
+<h4 class="alert-heading">
+Features:
+<button onclick="drawgeom_start(new_feature)">New Feature</button>
 </h4>
 <table style="width:100%" class="table table-dark">
 	<tr>
