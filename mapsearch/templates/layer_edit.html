@@ -10,9 +10,11 @@
 <link href="//netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
 
 <script>
-	// flexible text drawing functionality
+	// flexible drawing functionality
 	var map = window.map;
-
+	
+	// text drawing
+	
 	function drawtext_start(onfinish){
 		//alert('drawtext start');
 		var stopclick = false; //to prevent more than one click listener
@@ -59,6 +61,44 @@
 		// focus on text input
 		document.getElementById("id_drawtext_text").focus();
 	};
+	
+	// text selection
+	function selecttext_start(lyr, onfinish){
+		//alert('drawtext select');
+		// onclick wrapper
+		function selecttext_select_wrap(e){
+			// unbind click
+			lyr.off('click', selecttext_select_wrap);
+			// open popup
+			var featlyr = e.layer;
+			selecttext_popup(e, lyr, featlyr, onfinish)
+		};
+		// bind click
+		lyr.on('click', selecttext_select_wrap);
+	};
+	
+	function selecttext_popup(e, lyr, featlyr, onfinish){
+		//alert('drawtext popup');
+		// define finish func
+		function selecttext_finish(){
+			//alert('drawtext finish');
+			// run onfinish func
+			onfinish();
+			// exit
+			map.closePopup();
+		};
+		// define popup
+		var content = '<div><input type="hidden" id="id_selecttext_data" value='+"'"+JSON.stringify(featlyr.toGeoJSON())+"'"+'><p>'+featlyr.feature.properties.text+'</p><button id="id_selecttext_finishbut">Select</button><button id="id_selecttext_editbut">Edit</button></div>';
+		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true});
+		popup.setContent(content);
+		// open popup at location
+		var bounds = featlyr.getBounds();
+		var latlng = bounds.getSouthWest();
+		popup.setLatLng(latlng);
+		map.openPopup(popup);
+		// set button onclick func
+		document.getElementById("id_selecttext_finishbut").addEventListener("click", selecttext_finish);
+	};
 </script>
 
 <h3>Now Editing Layer: {{ layer.name }}</h3>
@@ -88,25 +128,38 @@
 	</tr>
 	<tr>
 		<td>
-			<p><a href="">Description if not empty...</a></p>
+			<p><a id="id_legend_description_display" href=""></a></p>
 			<input id="id_legend_description" name="legend_description" type="hidden">
 			<script>
 				var map = window.map;
 				
-				function set_legend_description(){
+				function new_legend_description(){
 					// get geometry
 					var geoj = JSON.parse(document.getElementById("id_drawtext_geom").value);
 					// set properties
 					geoj.properties.text = document.getElementById("id_drawtext_text").value;
 					// add to existing textlyr
-					alert(JSON.stringify(geoj));
 					window.textlyr.addData(geoj);
+					// update
+					update_legend_description(geoj);
+				};
+				
+				function select_legend_description(){
+					// get geometry
+					var geoj = JSON.parse(document.getElementById("id_selecttext_data").value);
+					// update
+					update_legend_description(geoj);
+				};
+				
+				function update_legend_description(geoj){
 					// save as json string
 					document.getElementById("id_legend_description").value = JSON.stringify(geoj);
+					// update text
+					document.getElementById("id_legend_description_display").textContent = geoj.properties.text;
 				};
 			</script>
-			<button type="button" onclick="selecttext();">Select Text</button>
-			<button type="button" onclick="drawtext_start(set_legend_description);">Draw Text</button>
+			<button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);">Select Text</button>
+			<button type="button" onclick="drawtext_start(new_legend_description);">Draw Text</button>
 		</td>
 		<td>
 			<input id="id_legend_symbol" name="legend_symbol" value="{{ layer.legend_symbol|safe }}" type="hidden">
@@ -208,7 +261,7 @@
 	
 	  var texts = [{% for text in map.texts.all %}
 			{'type': 'Feature',
-			'properties': {},
+			'properties': {'text':'{{ text.text }}'},
 			'geometry': {{ text.geom|safe }}
 			},
 		{% endfor %}
