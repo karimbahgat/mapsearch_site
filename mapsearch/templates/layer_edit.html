@@ -19,7 +19,7 @@
 		//alert('drawtext start');
 		var rect = new L.Draw.Rectangle(map, {shapeOptions: {
 													showArea: true,
-													color: '#FFF'
+													color: 'black'
 													}
 												}
 											);
@@ -48,7 +48,7 @@
 		};
 		// define popup
 		var content = '<div><input type="hidden" id="id_drawtext_geom" value='+"'"+JSON.stringify(e.layer.toGeoJSON())+"'"+'><input id="id_drawtext_text" type="text"><button id="id_drawtext_finishbut">Add</button></div>';
-		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true});
+		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false});
 		popup.setContent(content);
 		// open popup at location
 		var bounds = e.layer.getBounds();
@@ -88,7 +88,7 @@
 		};
 		// define popup
 		var content = '<div><input type="hidden" id="id_selecttext_data" value='+"'"+JSON.stringify(featlyr.toGeoJSON())+"'"+'><p>'+featlyr.feature.properties.text+'</p><button id="id_selecttext_finishbut">Select</button><button id="id_selecttext_editbut">Edit</button></div>';
-		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true});
+		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false});
 		popup.setContent(content);
 		// open popup at location
 		var bounds = featlyr.getBounds();
@@ -154,6 +154,15 @@
 	
 	function drawgeom_popup(e, templyr, onfinish){
 		//alert('drawgeom popup');
+		// define popup
+		var content = '<div><h4>New Feature</h4><h5>Geometries</h5><input type="hidden" id="id_drawgeom_geom" value='+"'"+JSON.stringify(templyr.toGeoJSON())+"'"+'><button id="id_drawgeom_addbut">Add Geometry</button><h5>Label</h5><a id="id_drawgeom_label_display" href=""></a><div id="id_drawgeom_label_buttons"><input id="id_drawgeom_label" type="hidden"><button type="button" onclick="selecttext_start(window.textlyr, select_drawgeom_label);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button><button type="button" onclick="drawtext_start(new_drawgeom_label);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button></div><p><button id="id_drawgeom_finishbut" class="btn btn-primary" type="button">Save</button><button id="id_drawgeom_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></div>';
+		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false, closeButton:false});
+		popup.setContent(content);
+		// open popup at location
+		var bounds = e.layer.getBounds();
+		var latlng = bounds.getSouthWest();
+		popup.setLatLng(latlng);
+		map.openPopup(popup);
 		// define add func
 		function drawgeom_add(){
 			//alert('drawgeom add');
@@ -165,9 +174,9 @@
 		// define finish func
 		function drawgeom_finish(){
 			//alert('drawgeom finish');
-			// merge into multigeom
 			var geoj = templyr.toGeoJSON();
 			if (geoj.features.length > 1) {
+				// merge into multigeom
 				var multi = [];
 				for (i = 0; i < geoj.features.length; i++) {
 					var coords = geoj.features[i].geometry.coordinates;
@@ -176,10 +185,22 @@
 				var geom = {'type':'Multi'+geoj.features[0].geometry.type,
 							'coordinates':multi};
 				var geoj = {'type':'Feature',
-							'properties':{},
+							'properties':{'label':null},
 							'geometry':geom};
-				document.getElementById("id_drawgeom_geom").value = JSON.stringify(geoj);
+			} else {
+				// use first feature
+				var geoj = geoj.features[0];
+				geoj.properties.label = null;
 			};
+			// add in label
+			var labelstr = document.getElementById("id_drawgeom_label").value;
+			if (labelstr){
+				var label = JSON.parse(labelstr);
+				geoj.properties.label = label;
+			};
+			// store back to dom
+			alert(JSON.stringify(geoj));
+			document.getElementById("id_drawgeom_geom").value = JSON.stringify(geoj);
 			// run onfinish func
 			onfinish();
 			// exit
@@ -191,21 +212,39 @@
 			// clear prev drawn geometries
 			templyr.clearLayers();
 			// exit
-			map.closePopup();
+			map.closePopup(popup);
 		};
-		// define popup
-		var content = '<div><h4>New Feature</h4><h5>Geometries</h5><input type="hidden" id="id_drawgeom_geom" value='+"'"+JSON.stringify(templyr.toGeoJSON())+"'"+'><button id="id_drawgeom_addbut">Add Geometry</button><h5>Label</h5><button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button><button type="button" onclick="drawtext_start(new_legend_description);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button><p><button id="id_drawgeom_finishbut" class="btn btn-primary" type="button">Save</button><button id="id_drawgeom_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></div>';
-		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true});
-		popup.setContent(content);
-		// open popup at location
-		var bounds = e.layer.getBounds();
-		var latlng = bounds.getSouthWest();
-		popup.setLatLng(latlng);
-		map.openPopup(popup);
 		// set button onclick func
 		document.getElementById("id_drawgeom_addbut").addEventListener("click", drawgeom_add);
 		document.getElementById("id_drawgeom_finishbut").addEventListener("click", drawgeom_finish);
 		document.getElementById("id_drawgeom_cancelbut").addEventListener("click", drawgeom_cancel);
+	};
+	
+	function new_drawgeom_label(){
+		// get geometry
+		var geoj = JSON.parse(document.getElementById("id_drawtext_geom").value);
+		// set properties
+		geoj.properties.text = document.getElementById("id_drawtext_text").value;
+		// add to existing textlyr
+		window.textlyr.addData(geoj);
+		// update
+		update_drawgeom_label(geoj);
+	};
+	
+	function select_drawgeom_label(){
+		// get geometry
+		var geoj = JSON.parse(document.getElementById("id_selecttext_data").value);
+		// update
+		update_drawgeom_label(geoj);
+	};
+	
+	function update_drawgeom_label(geoj){
+		// save as json string
+		document.getElementById("id_drawgeom_label").value = JSON.stringify(geoj);
+		// update text
+		document.getElementById("id_drawgeom_label_display").textContent = geoj.properties.text;
+		// hide label buttons
+		document.getElementById("id_drawgeom_label_buttons").style.display = 'none';
 	};
 </script>
 
