@@ -47,7 +47,7 @@
 			map.closePopup();
 		};
 		// define popup
-		var content = '<div><input type="hidden" id="id_drawtext_geom" value='+"'"+JSON.stringify(e.layer.toGeoJSON())+"'"+'><input id="id_drawtext_text" type="text"><button id="id_drawtext_finishbut">Add</button></div>';
+		var content = '<div><form id="id_drawtext_form"><input type="hidden" id="id_drawtext_geom" value='+"'"+JSON.stringify(e.layer.toGeoJSON())+"'"+'><input id="id_drawtext_text" type="text"><button id="id_drawtext_finishbut">Add</button></form></div>';
 		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false});
 		popup.setContent(content);
 		// open popup at location
@@ -56,7 +56,7 @@
 		popup.setLatLng(latlng);
 		map.openPopup(popup);
 		// set button onclick func
-		document.getElementById("id_drawtext_finishbut").addEventListener("click", drawtext_finish);
+		document.getElementById("id_drawtext_form").onsubmit = function() {drawtext_finish(); return false;}; // return false is necessary to disable form submit redirect
 		// focus on text input
 		document.getElementById("id_drawtext_text").focus();
 	};
@@ -199,7 +199,6 @@
 				geoj.properties.label = label;
 			};
 			// store back to dom
-			alert(JSON.stringify(geoj));
 			document.getElementById("id_drawgeom_geom").value = JSON.stringify(geoj);
 			// run onfinish func
 			onfinish();
@@ -303,15 +302,18 @@
 					document.getElementById("id_legend_description").value = JSON.stringify(geoj);
 					// update text
 					document.getElementById("id_legend_description_display").textContent = geoj.properties.text;
-					// hide custom name
 					document.getElementById("id_name").value = geoj.properties.text;
+					// hide custom name
+					document.getElementById("id_legend_description_buttons").style.display = 'none';
 					//document.getElementById("id_name").style.display = 'none';
 					// scroll back up
 					document.getElementById("id_layerform").scrollIntoView();
 				};
 			</script>
-			<button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button>
-			<button type="button" onclick="drawtext_start(new_legend_description);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button>
+			<div id="id_legend_description_buttons">
+				<button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button>
+				<button type="button" onclick="drawtext_start(new_legend_description);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button>
+			</div>
 		</td>
 		<td>
 			<input id="id_legend_symbol" name="legend_symbol" value="{{ layer.legend_symbol|safe }}" type="hidden">
@@ -376,6 +378,33 @@
 			Draw
 			</button>
 		</td>
+		<td></td>
+	</tr>
+</table>
+
+<script>
+	var map = window.map;
+
+	function new_feature(){
+		// get geometry
+		var geoj = JSON.parse(document.getElementById("id_drawgeom_geom").value);
+		// add to existing feature lyr
+		window.featureslyr.addData(geoj);
+	};
+</script>
+
+<table style="width:100%; table-layout: fixed; margin:10px">
+	<tr>
+		<th>Digitizing</th>
+		<th></th>
+		<th></th>
+	</tr>
+	<tr>
+		<td>
+			<button type="button" onclick="drawgeom_start(new_feature)">New Feature</button>
+			<button type="button">Edit</button>
+		</td>
+		<td></td>
 		<td></td>
 	</tr>
 </table>
@@ -474,38 +503,6 @@
 
 </div>
 
-<br>
-
-<div class="alert alert-dark" role="alert">
-<script>
-	var map = window.map;
-	
-	function new_feature(){
-		// get geometry
-		var geoj = JSON.parse(document.getElementById("id_drawgeom_geom").value);
-		// add to existing feature lyr
-		window.featureslyr.addData(geoj);
-	};
-</script>
-<h4 class="alert-heading">
-Features:
-<button onclick="drawgeom_start(new_feature)">New Feature</button>
-</h4>
-<table style="width:100%" class="table table-dark">
-	<tr>
-		<th></th>
-		<th>GeoJSON</th>
-		<th>Label</th>
-	</tr>
-	{% for feat in layer.features.all %}
-	<tr>
-		<td><img src="https://cdn2.iconfinder.com/data/icons/geometry-outline/60/42_-Geometric_Form-_geometry_shape_form_drawing-512.png" width=30px style="filter: invert(1)"></td>
-		<td>{{ feat.geom }}</td>
-		<td>{{ feat.label }}</td>
-	</tr>
-	{% endfor %}
-</table>
-
-</div>
+<br><br>
 
 {% endblock %}
