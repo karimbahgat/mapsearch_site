@@ -101,12 +101,50 @@
 	
 	// geom drawing
 	
+	function multiGeomToFeatureCollection(geoj) {
+		coll = {'type':'FeatureCollection',
+				'features':[]};
+		if (geoj.geometry.type.startsWith('Multi')) {
+			geoj.geometry.coordinates.forEach(function(part){
+				var geom = {'type':geoj.geometry.type.slice(5),
+							'coordinates':part};
+				var feat = {'type':'Feature',
+							'properties':geoj.properties,
+							'geometry':geom};
+				coll.features.push(feat);
+			});
+		} else {
+			coll.features.push(geoj);
+		};
+		return coll;
+	};
+	
+	function featureCollectionToMultiGeom(geoj) {
+		if (geoj.features.length > 1) {
+			// merge into multigeom
+			var multi = [];
+			for (i = 0; i < geoj.features.length; i++) {
+				var coords = geoj.features[i].geometry.coordinates;
+				multi.push(coords);
+			};
+			var geom = {'type':'Multi'+geoj.features[0].geometry.type,
+						'coordinates':multi};
+			var geoj = {'type':'Feature',
+						'properties':geoj.features[0].properties,
+						'geometry':geom};
+		} else {
+			// use first feature
+			var geoj = geoj.features[0];
+		};
+		return geoj;
+	};
+	
 	function drawgeom_start(onfinish, templyr=null){
 		//alert('drawgeom start');
 		if (!templyr) {
 			var templyr = L.geoJSON();
+			map.addLayer(templyr);
 		};
-		map.addLayer(templyr);
 		var geomtype = document.getElementById("id_type").value;
 		if (geomtype == 'Point') {
 			var drawer = new L.Draw.Rectangle(map, {shapeOptions: {
@@ -141,7 +179,10 @@
 	function drawgeom_create(e, templyr, onfinish){
 		//alert('drawgeom create');
 		var geoj = e.layer.toGeoJSON();
-		templyr.addData(geoj);
+		coll = templyr.toGeoJSON();
+		coll.features.push(geoj);
+		templyr.clearLayers();
+		templyr.addData(coll);
 		// make editable
 		templyr.eachLayer(function (fl) {
 			fl.editing.enable();
@@ -153,6 +194,7 @@
 	function drawgeom_edit(e, templyr, onfinish){
 		//alert('drawgeom create');
 		var geoj = e.layer.toGeoJSON();
+		geoj = multiGeomToFeatureCollection(geoj);
 		var templyr = L.geoJSON();
 		templyr.addData(geoj);
 		map.addLayer(templyr);
@@ -163,7 +205,7 @@
 		// call popup
 		drawgeom_popup(e, templyr, onfinish);
 	};
-	
+	/*
 	function drawgeom_edit2(e, onfinish){
 		//alert('drawgeom edit');
 		var templyr = L.geoJSON();
@@ -178,11 +220,16 @@
 		// call popup
 		drawgeom_popup(e, templyr, onfinish);
 	};
-	
+	*/
 	function drawgeom_popup(e, templyr, onfinish){
 		//alert('drawgeom popup');
 		// define popup
-		var content = '<div><h4>Feature</h4><h5>Geometries</h5><input type="hidden" id="id_drawgeom_geom" value='+"'"+JSON.stringify(templyr.toGeoJSON())+"'"+'><button id="id_drawgeom_addbut">Add Geometry</button><h5>Label</h5><a id="id_drawgeom_label_display" href=""></a><div id="id_drawgeom_label_buttons"><input id="id_drawgeom_label" type="hidden"><button type="button" onclick="selecttext_start(window.textlyr, select_drawgeom_label);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button><button type="button" onclick="drawtext_start(new_drawgeom_label);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button></div><p><button id="id_drawgeom_finishbut" class="btn btn-primary" type="button">Save</button><button id="id_drawgeom_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></div>';
+		var geoj = templyr.toGeoJSON();
+		label = ''
+		if (geoj.features[0].properties.label) {
+			label = geoj.features[0].properties.label;
+		};
+		var content = '<div><h4>Feature</h4><h5>Geometries</h5><input type="hidden" id="id_drawgeom_geom" value='+"'"+JSON.stringify(geoj)+"'"+'><button id="id_drawgeom_addbut">Add Geometry</button><h5>Label</h5><a id="id_drawgeom_label_display" href=""></a><div id="id_drawgeom_label_buttons"><input id="id_drawgeom_label" type="hidden" value='+"'"+JSON.stringify(label)+"'"+'><button type="button" onclick="selecttext_start(window.textlyr, select_drawgeom_label);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button><button type="button" onclick="drawtext_start(new_drawgeom_label);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button></div><p><button id="id_drawgeom_finishbut" class="btn btn-primary" type="button">Save</button><button id="id_drawgeom_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></div>';
 		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false, closeButton:false});
 		popup.setContent(content);
 		// open popup at location
@@ -190,9 +237,25 @@
 		var latlng = bounds.getSouthWest();
 		popup.setLatLng(latlng);
 		map.openPopup(popup);
+		// update label
+		if (label) {
+			update_drawgeom_label(label);
+		};
 		// define add func
 		function drawgeom_add(){
 			//alert('drawgeom add');
+			var geoj = templyr.toGeoJSON();
+			// add in label
+			var labelstr = document.getElementById("id_drawgeom_label").value;
+			if (labelstr){
+				var label = JSON.parse(labelstr);
+				geoj.features.forEach(function(f){
+					f.properties.label = label;
+				});
+			};
+			// update templyr
+			templyr.clearLayers();
+			templyr.addData(geoj);
 			// close popup
 			map.closePopup();
 			// run start func again, this time building on existing templyr
@@ -202,23 +265,7 @@
 		function drawgeom_finish(){
 			//alert('drawgeom finish');
 			var geoj = templyr.toGeoJSON();
-			if (geoj.features.length > 1) {
-				// merge into multigeom
-				var multi = [];
-				for (i = 0; i < geoj.features.length; i++) {
-					var coords = geoj.features[i].geometry.coordinates;
-					multi.push(coords);
-				};
-				var geom = {'type':'Multi'+geoj.features[0].geometry.type,
-							'coordinates':multi};
-				var geoj = {'type':'Feature',
-							'properties':{'label':null},
-							'geometry':geom};
-			} else {
-				// use first feature
-				var geoj = geoj.features[0];
-				geoj.properties.label = null;
-			};
+			geoj = featureCollectionToMultiGeom(geoj);
 			// add in label
 			var labelstr = document.getElementById("id_drawgeom_label").value;
 			if (labelstr){
@@ -237,6 +284,7 @@
 			//alert('drawgeom finish');
 			// clear prev drawn geometries
 			templyr.clearLayers();
+			map.removeLayer(templyr);
 			// exit
 			map.closePopup(popup);
 		};
