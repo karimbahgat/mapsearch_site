@@ -18,9 +18,9 @@
 	function drawtext_start(onfinish){
 		//alert('drawtext start');
 		var rect = new L.Draw.Rectangle(map, {shapeOptions: {
-													showArea: true,
 													color: 'black'
-													}
+													},
+												showArea:false
 												}
 											);
 		rect.enable();
@@ -33,30 +33,45 @@
 
 	function drawtext_create(e, onfinish){
 		//alert('drawtext create');
-		drawtext_popup(e, onfinish);
+		var templyr = L.geoJSON(e.layer.toGeoJSON(), {color:'black'});
+		map.addLayer(templyr);
+		// make editable
+		templyr.eachLayer(function (fl) {
+			fl.editing.enable();
+		});
+		// popup
+		drawtext_popup(e, templyr, onfinish);
 	};
 
-	function drawtext_popup(e, onfinish){
+	function drawtext_popup(e, templyr, onfinish){
 		//alert('drawtext popup');
+		// define popup
+		var geoj = templyr.toGeoJSON().features[0];
+		var content = '<div><h4>Text</h4><form id="id_drawtext_form"><input type="hidden" id="id_drawtext_geom" value='+"'"+JSON.stringify(geoj)+"'"+'><input id="id_drawtext_text" type="text"><p><button id="id_drawtext_finishbut" class="btn btn-primary" type="submit">Save</button><button id="id_drawtext_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></form></div>'
+		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false, closeButton:false});
+		popup.setContent(content);
+		// open popup at location
+		var bounds = templyr.getBounds();
+		var latlng = bounds.getSouthWest();
+		popup.setLatLng(latlng);
+		map.openPopup(popup);
 		// define finish func
 		function drawtext_finish(){
 			//alert('drawtext finish');
 			// run onfinish func
 			onfinish();
 			// exit
-			map.closePopup();
+			drawtext_cancel();
 		};
-		// define popup
-		var content = '<div><form id="id_drawtext_form"><input type="hidden" id="id_drawtext_geom" value='+"'"+JSON.stringify(e.layer.toGeoJSON())+"'"+'><input id="id_drawtext_text" type="text"><button id="id_drawtext_finishbut">Add</button></form></div>';
-		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false});
-		popup.setContent(content);
-		// open popup at location
-		var bounds = e.layer.getBounds();
-		var latlng = bounds.getSouthWest();
-		popup.setLatLng(latlng);
-		map.openPopup(popup);
+		// define cancel func
+		function drawtext_cancel(){
+			//alert('drawtext finish');
+			map.removeLayer(templyr);
+			map.closePopup(popup);
+		};
 		// set button onclick func
 		document.getElementById("id_drawtext_form").onsubmit = function() {drawtext_finish(); return false;}; // return false is necessary to disable form submit redirect
+		document.getElementById("id_drawtext_cancelbut").addEventListener("click", drawtext_cancel);
 		// focus on text input
 		document.getElementById("id_drawtext_text").focus();
 	};
