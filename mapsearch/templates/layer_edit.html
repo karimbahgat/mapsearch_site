@@ -43,11 +43,12 @@
 		drawtext_popup(e, templyr, onfinish);
 	};
 
-	function drawtext_popup(e, templyr, onfinish){
+	function drawtext_popup(e, templyr, onfinish, oldlyr=null){
 		//alert('drawtext popup');
 		// define popup
 		var geoj = templyr.toGeoJSON().features[0];
-		var content = '<div><h4>Text</h4><form id="id_drawtext_form"><input type="hidden" id="id_drawtext_geom" value='+"'"+JSON.stringify(geoj)+"'"+'><input id="id_drawtext_text" type="text"><p><button id="id_drawtext_finishbut" class="btn btn-primary" type="submit">Save</button><button id="id_drawtext_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></form></div>'
+		var labelstr = geoj.properties.text || '';
+		var content = '<div><h4>Text</h4><form id="id_drawtext_form"><input type="hidden" id="id_drawtext_geom" value='+"'"+JSON.stringify(geoj)+"'"+'><input id="id_drawtext_text" type="text" value='+"'"+labelstr+"'"+'><p><button id="id_drawtext_finishbut" class="btn btn-primary" type="submit">Save</button><button id="id_drawtext_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></form></div>'
 		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false, closeButton:false});
 		popup.setContent(content);
 		// open popup at location
@@ -59,7 +60,11 @@
 		function drawtext_finish(){
 			//alert('drawtext finish');
 			// run onfinish func
-			onfinish();
+			if (oldlyr) {
+				onfinish(oldlyr);
+			} else {
+				onfinish(); 
+			};
 			// exit
 			drawtext_cancel();
 		};
@@ -89,6 +94,7 @@
 		};
 		// bind click
 		lyr.on('click', selecttext_select_wrap);
+		map.getContainer().focus();
 	};
 	
 	function selecttext_popup(e, lyr, featlyr, onfinish){
@@ -112,6 +118,35 @@
 		map.openPopup(popup);
 		// set button onclick func
 		document.getElementById("id_selecttext_finishbut").addEventListener("click", selecttext_finish);
+		document.getElementById("id_selecttext_editbut").addEventListener("click", function(e){edittext_select(e, featlyr, onfinish)});
+	};
+	
+	function edittext_select(e, featlyr, onfinish){
+		//alert('editgeom select');
+		// NOT FINISHED...
+		var edit = featlyr;
+		var geoj = featlyr.toGeoJSON();
+		var templyr = L.geoJSON(geoj, {color:'black'});
+		map.addLayer(templyr);
+		// make editable
+		templyr.eachLayer(function (fl) {
+			fl.editing.enable();
+		});
+		// zoom to layer
+		map.flyToBounds(templyr.getBounds(), {padding:[200,200]});
+		// call popup
+		drawtext_popup(e, templyr, onfinish, oldlyr=edit);
+	};
+	
+	function replace_text(feat){
+		// NOT FINISHED...
+		// get old feature obj
+		// ...
+		// get new geometry
+		var geoj = JSON.parse(document.getElementById("id_drawtext_geom").value);
+		// replace
+		window.textlyr.removeLayer(feat);
+		window.textlyr.addData(geoj);
 	};
 	
 	// geom drawing
@@ -210,11 +245,11 @@
 		//alert('drawgeom popup');
 		// define popup
 		var geoj = templyr.toGeoJSON();
-		label = ''
+		var label = '';
 		if (geoj.features[0].properties.label) {
-			label = geoj.features[0].properties.label;
+			var label = geoj.features[0].properties.label;
 		};
-		var content = '<div><h4>Feature</h4><h5>Geometries</h5><input type="hidden" id="id_drawgeom_geom" value='+"'"+JSON.stringify(geoj)+"'"+'><button id="id_drawgeom_addbut">Add Geometry</button><h5>Label</h5><a id="id_drawgeom_label_display" href=""></a><div id="id_drawgeom_label_buttons"><input id="id_drawgeom_label" type="hidden" value='+"'"+JSON.stringify(label)+"'"+'><button type="button" onclick="selecttext_start(window.textlyr, select_drawgeom_label);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button><button type="button" onclick="drawtext_start(new_drawgeom_label);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button></div><p><button id="id_drawgeom_finishbut" class="btn btn-primary" type="button">Save</button><button id="id_drawgeom_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></div>';
+		var content = '<div><h4>Feature</h4><h5>Geometries</h5><input type="hidden" id="id_drawgeom_geom" value='+"'"+JSON.stringify(geoj)+"'"+'><button id="id_drawgeom_addbut">Add Geometry</button><h5>Label</h5><input id="id_drawgeom_label" type="hidden" value='+"'"+JSON.stringify(label)+"'"+'><button id="id_drawgeom_label_display" class="btn btn-link" style="padding:0; margin:0;"></button><div id="id_drawgeom_label_buttons"><button type="button" onclick="drawtext_start(new_drawgeom_label);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button><button type="button" onclick="selecttext_start(window.textlyr, select_drawgeom_label);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button></div><p><button id="id_drawgeom_finishbut" class="btn btn-primary" type="button">Save</button><button id="id_drawgeom_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></div>';
 		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false, closeButton:false});
 		popup.setContent(content);
 		// open popup at location
@@ -277,10 +312,26 @@
 			// exit
 			map.closePopup(popup);
 		};
+		// define label edit func
+		function drawgeom_edit_label(){
+			//alert('drawgeom finish');
+			// find text feat based on textid
+			var featlyr = null;
+			var label = JSON.parse(document.getElementById("id_drawgeom_label").value);
+			var matchid = label.properties.drawid;
+			window.textlyr.eachLayer(function (feat) {
+				if (feat.feature.properties.drawid == matchid){
+					featlyr = feat;
+				};
+			});
+			// open popup for that text
+			edittext_select(e, featlyr, onfinish);
+		};
 		// set button onclick func
 		document.getElementById("id_drawgeom_addbut").addEventListener("click", drawgeom_add);
 		document.getElementById("id_drawgeom_finishbut").addEventListener("click", drawgeom_finish);
 		document.getElementById("id_drawgeom_cancelbut").addEventListener("click", drawgeom_cancel);
+		document.getElementById("id_drawgeom_label_display").addEventListener("click", drawgeom_edit_label);
 	};
 	
 	function new_drawgeom_label(){
@@ -288,20 +339,22 @@
 		var geoj = JSON.parse(document.getElementById("id_drawtext_geom").value);
 		// set properties
 		geoj.properties.text = document.getElementById("id_drawtext_text").value;
+		geoj.properties.drawid = DRAWID_COUNTER;
+		DRAWID_COUNTER++;
 		// add to existing textlyr
 		window.textlyr.addData(geoj);
 		// update
-		update_drawgeom_label(geoj);
+		refresh_drawgeom_label(geoj);
 	};
 	
 	function select_drawgeom_label(){
 		// get geometry
 		var geoj = JSON.parse(document.getElementById("id_selecttext_data").value);
 		// update
-		update_drawgeom_label(geoj);
+		refresh_drawgeom_label(geoj);
 	};
 	
-	function update_drawgeom_label(geoj){
+	function refresh_drawgeom_label(geoj){
 		// save as json string
 		document.getElementById("id_drawgeom_label").value = JSON.stringify(geoj);
 		// update text
@@ -309,6 +362,8 @@
 		// hide label buttons
 		document.getElementById("id_drawgeom_label_buttons").style.display = 'none';
 	};
+	
+	var DRAWID_COUNTER = 1;
 </script>
 
 <h3>Now Editing Layer: {{ layer.name }}</h3>
@@ -338,7 +393,7 @@
 	</tr>
 	<tr>
 		<td>
-			<p><a id="id_legend_description_display" href=""></a></p>
+			<p><button id="id_legend_description_display" type="button" class="btn btn-link"></button></p>
 			<input id="id_legend_description" name="legend_description" type="hidden">
 			<script>
 				var map = window.map;
@@ -351,17 +406,35 @@
 					// add to existing textlyr
 					window.textlyr.addData(geoj);
 					// update
-					update_legend_description(geoj);
+					refresh_legend_description(geoj);
+				};
+				
+				function replace_legend_description(){
 				};
 				
 				function select_legend_description(){
 					// get geometry
 					var geoj = JSON.parse(document.getElementById("id_selecttext_data").value);
 					// update
-					update_legend_description(geoj);
+					refresh_legend_description(geoj);
 				};
 				
-				function update_legend_description(geoj){
+				function edit_legend_description(){
+					//alert('drawgeom finish');
+					// find text feat based on textid
+					var featlyr = null;
+					var label = JSON.parse(document.getElementById("id_legend_description").value);
+					var matchid = label.properties.drawid;
+					window.textlyr.eachLayer(function (feat) {
+						if (feat.feature.properties.drawid == matchid){
+							featlyr = feat;
+						};
+					});
+					// open popup for that text
+					edittext_select(null, featlyr, function(){});
+				};
+				
+				function refresh_legend_description(geoj){
 					// save as json string
 					document.getElementById("id_legend_description").value = JSON.stringify(geoj);
 					// update text
@@ -373,10 +446,13 @@
 					// scroll back up
 					document.getElementById("id_layerform").scrollIntoView();
 				};
+				
+				// set description link onclick func
+				document.getElementById("id_legend_description_display").addEventListener("click", edit_legend_description);
 			</script>
 			<div id="id_legend_description_buttons">
-				<button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button>
 				<button type="button" onclick="drawtext_start(new_legend_description);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button>
+				<button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button>
 			</div>
 		</td>
 		<td>
@@ -472,6 +548,7 @@
 			editgeom_select(e, replace_feature);
 		};
 		window.featureslyr.on('click', editgeom_select_wrap);
+		map.getContainer().focus();
 	};
 	
 	function editgeom_select(e, onfinish){
@@ -571,6 +648,16 @@
 		  // add text layer
 		  var textlyr = L.geoJson(texts, {'color':'black'}).addTo(map);
 		  window.textlyr = textlyr;
+		  
+		  // assign drawid to text features
+		  textlyr.eachLayer(function(fl){
+			var drawid = DRAWID_COUNTER;
+		    fl.feature.properties.drawid = drawid;
+		    DRAWID_COUNTER++;
+		  });
+		  //textlyr.eachLayer(function(fl){
+		  //  alert(fl.feature.properties.drawid);
+		  //});
 		  
 		  // add features layer
 		  var features = {{ layer.to_geojson|safe }};
