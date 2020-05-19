@@ -139,7 +139,7 @@
 		return geoj;
 	};
 	
-	function drawgeom_start(onfinish, templyr=null){
+	function drawgeom_start(onfinish, templyr=null, oldlyr=null){
 		//alert('drawgeom start');
 		if (!templyr) {
 			var templyr = L.geoJSON();
@@ -171,12 +171,12 @@
 		drawer.enable();
 		function drawgeom_create_wrap(e){
 			map.off('draw:created', drawgeom_create_wrap);
-			drawgeom_create(e, templyr, onfinish);
+			drawgeom_create(e, templyr, onfinish, oldlyr);
 		};
 		map.on('draw:created', drawgeom_create_wrap);
 	};
 	
-	function drawgeom_create(e, templyr, onfinish){
+	function drawgeom_create(e, templyr, onfinish, oldlyr=null){
 		//alert('drawgeom create');
 		var geoj = e.layer.toGeoJSON();
 		coll = templyr.toGeoJSON();
@@ -188,40 +188,10 @@
 			fl.editing.enable();
 		});
 		// call popup
-		drawgeom_popup(e, templyr, onfinish);
+		drawgeom_popup(e, templyr, onfinish, oldlyr);
 	};
 	
-	function drawgeom_edit(e, templyr, onfinish){
-		//alert('drawgeom create');
-		var geoj = e.layer.toGeoJSON();
-		geoj = multiGeomToFeatureCollection(geoj);
-		var templyr = L.geoJSON();
-		templyr.addData(geoj);
-		map.addLayer(templyr);
-		// make editable
-		templyr.eachLayer(function (fl) {
-			fl.editing.enable();
-		});
-		// call popup
-		drawgeom_popup(e, templyr, onfinish);
-	};
-	/*
-	function drawgeom_edit2(e, onfinish){
-		//alert('drawgeom edit');
-		var templyr = L.geoJSON();
-		var geoj = e.layer.toGeoJSON();
-		alert(JSON.stringify(geoj));
-		templyr.addData(geoj);
-		// make editable
-		e.layer.editing.enable();
-		//templyr.eachLayer(function (fl) {
-		//	fl.editing.enable();
-		//});
-		// call popup
-		drawgeom_popup(e, templyr, onfinish);
-	};
-	*/
-	function drawgeom_popup(e, templyr, onfinish){
+	function drawgeom_popup(e, templyr, onfinish, oldlyr=null){
 		//alert('drawgeom popup');
 		// define popup
 		var geoj = templyr.toGeoJSON();
@@ -259,7 +229,7 @@
 			// close popup
 			map.closePopup();
 			// run start func again, this time building on existing templyr
-			drawgeom_start(onfinish, templyr);
+			drawgeom_start(onfinish, templyr, oldlyr);
 		};
 		// define finish func
 		function drawgeom_finish(){
@@ -275,7 +245,11 @@
 			// store back to dom
 			document.getElementById("id_drawgeom_geom").value = JSON.stringify(geoj);
 			// run onfinish func
-			onfinish();
+			if (oldlyr) {
+				onfinish(oldlyr);
+			} else {
+				onfinish();
+			};
 			// exit
 			drawgeom_cancel();
 		};
@@ -467,11 +441,40 @@
 		window.featureslyr.addData(geoj);
 	};
 	
-	function edit_feature() {
-		window.featureslyr.on('click', function(e){
-			drawgeom_edit(e, new_feature);
-		});
+	function replace_feature(feat){
+		// get old feature obj
+		// ...
+		// get new geometry
+		var geoj = JSON.parse(document.getElementById("id_drawgeom_geom").value);
+		// replace
+		window.featureslyr.removeLayer(feat);
+		window.featureslyr.addData(geoj);
 	};
+	
+	function editgeom_start(onfinish) {
+		function editgeom_select_wrap(e){
+			window.featureslyr.off('click', editgeom_select_wrap);
+			editgeom_select(e, replace_feature);
+		};
+		window.featureslyr.on('click', editgeom_select_wrap);
+	};
+	
+	function editgeom_select(e, onfinish){
+		//alert('editgeom select');
+		var edit = e.layer;
+		var geoj = e.layer.toGeoJSON();
+		geoj = multiGeomToFeatureCollection(geoj);
+		var templyr = L.geoJSON();
+		templyr.addData(geoj);
+		map.addLayer(templyr);
+		// make editable
+		templyr.eachLayer(function (fl) {
+			fl.editing.enable();
+		});
+		// call popup
+		drawgeom_popup(e, templyr, onfinish, oldlyr=edit);
+	};
+	
 </script>
 
 <table style="width:100%; table-layout: fixed; margin:10px">
@@ -483,7 +486,7 @@
 	<tr>
 		<td>
 			<button type="button" onclick="drawgeom_start(new_feature)">New Feature</button>
-			<button type="button" onclick="edit_feature();">Edit</button>
+			<button type="button" onclick="editgeom_start(replace_feature);">Edit</button>
 		</td>
 		<td></td>
 		<td></td>
