@@ -58,12 +58,19 @@
 		map.openPopup(popup);
 		// define finish func
 		function drawtext_finish(){
-			//alert('drawtext finish');
+			//alert('drawgeom finish');
+			var geoj = templyr.toGeoJSON();
+			geoj = featureCollectionToMultiGeom(geoj);
+			// add in label
+			var labelstr = document.getElementById("id_drawtext_text").value || '';
+			geoj.properties.text = labelstr;
+			// store back to dom
+			document.getElementById("id_drawtext_geom").value = JSON.stringify(geoj);
 			// run onfinish func
 			if (oldlyr) {
 				onfinish(oldlyr);
 			} else {
-				onfinish(); 
+				onfinish();
 			};
 			// exit
 			drawtext_cancel();
@@ -71,7 +78,10 @@
 		// define cancel func
 		function drawtext_cancel(){
 			//alert('drawtext finish');
+			// clear prev drawn geometries
+			templyr.clearLayers();
 			map.removeLayer(templyr);
+			// exit
 			map.closePopup(popup);
 		};
 		// set button onclick func
@@ -81,7 +91,38 @@
 		document.getElementById("id_drawtext_text").focus();
 	};
 	
+	// text editing
+	
+	/*
+	function edittext_start(onfinish) {
+		function edittext_select_wrap(e){
+			window.featureslyr.off('click', edittext_select_wrap);
+			edittext_select(e, replace_text);
+		};
+		window.textlyr.on('click', edittext_select_wrap);
+		map.getContainer().focus();
+	};
+	*/ 
+	
+	function edittext_select(e, featlyr, onfinish){
+		//alert('editgeom select');
+		// NOT FINISHED...
+		var edit = featlyr;
+		var geoj = featlyr.toGeoJSON();
+		var templyr = L.geoJSON(geoj, {color:'black'});
+		map.addLayer(templyr);
+		// make editable
+		templyr.eachLayer(function (fl) {
+			fl.editing.enable();
+		});
+		// zoom to layer
+		map.flyToBounds(templyr.getBounds(), {padding:[200,200]});
+		// call popup
+		drawtext_popup(e, templyr, onfinish, oldlyr=edit);
+	};
+	
 	// text selection
+	
 	function selecttext_start(lyr, onfinish){
 		//alert('drawtext select');
 		// onclick wrapper
@@ -119,34 +160,6 @@
 		// set button onclick func
 		document.getElementById("id_selecttext_finishbut").addEventListener("click", selecttext_finish);
 		document.getElementById("id_selecttext_editbut").addEventListener("click", function(e){edittext_select(e, featlyr, onfinish)});
-	};
-	
-	function edittext_select(e, featlyr, onfinish){
-		//alert('editgeom select');
-		// NOT FINISHED...
-		var edit = featlyr;
-		var geoj = featlyr.toGeoJSON();
-		var templyr = L.geoJSON(geoj, {color:'black'});
-		map.addLayer(templyr);
-		// make editable
-		templyr.eachLayer(function (fl) {
-			fl.editing.enable();
-		});
-		// zoom to layer
-		map.flyToBounds(templyr.getBounds(), {padding:[200,200]});
-		// call popup
-		drawtext_popup(e, templyr, onfinish, oldlyr=edit);
-	};
-	
-	function replace_text(feat){
-		// NOT FINISHED...
-		// get old feature obj
-		// ...
-		// get new geometry
-		var geoj = JSON.parse(document.getElementById("id_drawtext_geom").value);
-		// replace
-		window.textlyr.removeLayer(feat);
-		window.textlyr.addData(geoj);
 	};
 	
 	// geom drawing
@@ -259,7 +272,7 @@
 		map.openPopup(popup);
 		// update label
 		if (label) {
-			update_drawgeom_label(label);
+			refresh_drawgeom_label(label);
 		};
 		// define add func
 		function drawgeom_add(){
@@ -315,17 +328,19 @@
 		// define label edit func
 		function drawgeom_edit_label(){
 			//alert('drawgeom finish');
+			// NOTE: IS THIS NECESSARY, OR SHOULD CALL BE DIRECTLY
+			// TO EDITTEXT_SELECT, AND FEATLYR MATCH BE FOUND THERE...? 
 			// find text feat based on textid
 			var featlyr = null;
 			var label = JSON.parse(document.getElementById("id_drawgeom_label").value);
 			var matchid = label.properties.drawid;
-			window.textlyr.eachLayer(function (feat) {
+			window.textlyr.eachLayer(function (feat) { // WARNING: text layer hardcoded...
 				if (feat.feature.properties.drawid == matchid){
 					featlyr = feat;
 				};
 			});
 			// open popup for that text
-			edittext_select(e, featlyr, onfinish);
+			edittext_select(e, featlyr, replace_drawgeom_label);
 		};
 		// set button onclick func
 		document.getElementById("id_drawgeom_addbut").addEventListener("click", drawgeom_add);
@@ -334,14 +349,27 @@
 		document.getElementById("id_drawgeom_label_display").addEventListener("click", drawgeom_edit_label);
 	};
 	
+	// application specific (references specific layers)
+	
 	function new_drawgeom_label(){
 		// get geometry
 		var geoj = JSON.parse(document.getElementById("id_drawtext_geom").value);
 		// set properties
 		geoj.properties.text = document.getElementById("id_drawtext_text").value;
-		geoj.properties.drawid = DRAWID_COUNTER;
+		var drawid = DRAWID_COUNTER;
+		geoj.properties.drawid = drawid;
 		DRAWID_COUNTER++;
 		// add to existing textlyr
+		window.textlyr.addData(geoj);
+		// update
+		refresh_drawgeom_label(geoj);
+	};
+	
+	function replace_drawgeom_label(feat){
+		// get new label
+		var geoj = JSON.parse(document.getElementById("id_drawtext_geom").value);
+		// replace
+		window.textlyr.removeLayer(feat);
 		window.textlyr.addData(geoj);
 		// update
 		refresh_drawgeom_label(geoj);
@@ -409,7 +437,16 @@
 					refresh_legend_description(geoj);
 				};
 				
-				function replace_legend_description(){
+				function replace_legend_description(feat){
+					// get new label
+					var geoj = JSON.parse(document.getElementById("id_drawtext_geom").value);
+					// set properties
+					geoj.properties.text = document.getElementById("id_drawtext_text").value;
+					// replace
+					window.textlyr.removeLayer(feat);
+					window.textlyr.addData(geoj);
+					// update
+					refresh_legend_description(geoj);
 				};
 				
 				function select_legend_description(){
@@ -431,7 +468,7 @@
 						};
 					});
 					// open popup for that text
-					edittext_select(null, featlyr, function(){});
+					edittext_select(null, featlyr, replace_legend_description);
 				};
 				
 				function refresh_legend_description(geoj){
