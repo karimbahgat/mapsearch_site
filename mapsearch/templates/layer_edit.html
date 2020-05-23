@@ -262,7 +262,7 @@
 		if (geoj.features[0].properties.label) {
 			var label = geoj.features[0].properties.label;
 		};
-		var content = '<div><h4>Feature</h4><h5>Geometries</h5><input type="hidden" id="id_drawgeom_geom" value='+"'"+JSON.stringify(geoj)+"'"+'><button id="id_drawgeom_addbut">Add Geometry</button><h5>Label</h5><input id="id_drawgeom_label" type="hidden" value='+"'"+JSON.stringify(label)+"'"+'><button id="id_drawgeom_label_display" class="btn btn-link" style="padding:0; margin:0;"></button><div id="id_drawgeom_label_buttons"><button type="button" onclick="drawtext_start(new_drawgeom_label);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button><button type="button" onclick="selecttext_start(window.textlyr, select_drawgeom_label);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button></div><p><button id="id_drawgeom_finishbut" class="btn btn-primary" type="button">Save</button><button id="id_drawgeom_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></div>';
+		var content = '<div><h4>Feature</h4><h5>Geometries</h5><input type="hidden" id="id_drawgeom_geom" value='+"'"+JSON.stringify(geoj)+"'"+'><button id="id_drawgeom_addbut">Add Geometry</button><h5>Label</h5><input id="id_drawgeom_label" type="hidden" value='+"'"+JSON.stringify(label)+"'"+'><p id="id_drawgeom_label_display_block" style="display:none"><button id="id_drawgeom_label_display" type="button" class="btn btn-link" style="padding:0; margin:0;"></button><a href="" id="id_drawgeom_label_clearbut" onclick="clear_drawgeom_label(); return false"><img src="https://cdn3.iconfinder.com/data/icons/simple-web-navigation/165/cross-512.png" height="20px"></a></div><div id="id_drawgeom_label_buttons"><button type="button" onclick="drawtext_start(new_drawgeom_label);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button><button type="button" onclick="selecttext_start(window.textlyr, select_drawgeom_label);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button></div><p><button id="id_drawgeom_finishbut" class="btn btn-primary" type="button">Save</button><button id="id_drawgeom_cancelbut" class="btn btn-secondary" type="button">Cancel</button></p></div>';		
 		var popup = L.popup({closeOnClick:false, closeOnEscapeKey:true, autoClose:false, closeButton:false});
 		popup.setContent(content);
 		// open popup at location
@@ -382,13 +382,28 @@
 		refresh_drawgeom_label(geoj);
 	};
 	
+	function clear_drawgeom_label(){
+		refresh_drawgeom_label(null);
+	};
+	
 	function refresh_drawgeom_label(geoj){
-		// save as json string
-		document.getElementById("id_drawgeom_label").value = JSON.stringify(geoj);
-		// update text
-		document.getElementById("id_drawgeom_label_display").textContent = geoj.properties.text;
-		// hide label buttons
-		document.getElementById("id_drawgeom_label_buttons").style.display = 'none';
+		if (geoj) {
+			// save as json string
+			document.getElementById("id_drawgeom_label").value = JSON.stringify(geoj);
+			// update text
+			document.getElementById("id_drawgeom_label_display").textContent = geoj.properties.text;
+			// update display
+			document.getElementById("id_drawgeom_label_buttons").style.display = 'none';
+			document.getElementById("id_drawgeom_label_display_block").style.display = null;
+		} else {
+			// save as json string
+			document.getElementById("id_drawgeom_label").value = '';
+			// update text
+			document.getElementById("id_drawgeom_label_display").textContent = '';
+			// update display
+			document.getElementById("id_drawgeom_label_buttons").style.display = null;
+			document.getElementById("id_drawgeom_label_display_block").style.display = 'none';
+		};
 	};
 	
 	var DRAWID_COUNTER = 1;
@@ -421,7 +436,13 @@
 	</tr>
 	<tr>
 		<td>
-			<p><button id="id_legend_description_display" type="button" class="btn btn-link"></button></p>
+			<p id="id_legend_description_display_block" style="display:none">
+				<button id="id_legend_description_display" type="button" class="btn btn-link">
+				</button>
+				<a href="" id="id_legend_description_clearbut" onclick="clear_legend_description(); return false">
+					<img src="https://cdn3.iconfinder.com/data/icons/simple-web-navigation/165/cross-512.png" height="20px">
+				</a>
+			</p>
 			<input id="id_legend_description" name="legend_description" type="hidden">
 			<script>
 				var map = window.map;
@@ -471,17 +492,32 @@
 					edittext_select(null, featlyr, replace_legend_description);
 				};
 				
+				function clear_legend_description(){
+					refresh_legend_description(null);
+				};
+				
 				function refresh_legend_description(geoj){
-					// save as json string
-					document.getElementById("id_legend_description").value = JSON.stringify(geoj);
-					// update text
-					document.getElementById("id_legend_description_display").textContent = geoj.properties.text;
-					document.getElementById("id_name").value = geoj.properties.text;
-					// hide custom name
-					document.getElementById("id_legend_description_buttons").style.display = 'none';
-					//document.getElementById("id_name").style.display = 'none';
-					// scroll back up
-					document.getElementById("id_layerform").scrollIntoView();
+					if (geoj) {
+						// save as json string
+						document.getElementById("id_legend_description").value = JSON.stringify(geoj);
+						// update text
+						document.getElementById("id_legend_description_display").textContent = geoj.properties.text;
+						document.getElementById("id_name").value = geoj.properties.text;
+						// update display
+						document.getElementById("id_legend_description_buttons").style.display = 'none';
+						document.getElementById("id_legend_description_display_block").style.display = null;
+						// scroll back up
+						document.getElementById("id_layerform").scrollIntoView();
+					} else {
+						// save as json string
+						document.getElementById("id_legend_description").value = '';
+						// update text
+						document.getElementById("id_legend_description_display").textContent = '';
+						document.getElementById("id_name").value = '';
+						// update display
+						document.getElementById("id_legend_description_buttons").style.display = null;
+						document.getElementById("id_legend_description_display_block").style.display = 'none';
+					};
 				};
 				
 				// set description link onclick func
