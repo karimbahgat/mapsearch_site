@@ -409,32 +409,134 @@
 	var DRAWID_COUNTER = 1;
 </script>
 
-<h3>Now Editing Layer: {{ layer.name }}</h3>
-<h4>in map: <a href={% url "map_view" map.pk %}>{{ map.filename }}</a></h4>
+<h4>Editing layer in map: <a href={% url "map_view" map.pk %}>{{ map.filename }}</a></h4>
 
-<div class="alert alert-dark" role="alert">
+<div id="main_container" style="width:100%">
+
+
+
+<div class="alert alert-dark" role="alert" style="width:29%; height:70%; padding-left:1%; float:right">
 <h4>Layer Information:</h4>
 <form id="id_layerform" action="{% url 'layer_edit' form.initial.id %}" method="post" style="margin-bottom:0">
 {% csrf_token %}
-<table style="width:100%; table-layout: fixed; margin:10px">
+
+<div id="id_type" class="btn-group btn-group-toggle" data-toggle="buttons">
+  <label class="btn btn-secondary active">
+    <input type="radio" id="option1" autocomplete="off" checked> Point
+  </label>
+  <label class="btn btn-secondary">
+    <input type="radio" id="option2" autocomplete="off"> LineString
+  </label>
+  <label class="btn btn-secondary">
+    <input type="radio" id="option3" autocomplete="off"> Polygon
+  </label>
+</div>
+
+<br><br>
+
+<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+<input id="legend_switch" type="checkbox" checked data-toggle="toggle" data-on="Legend" data-off="No Legend" onchange="toggle_legend();">
+
+<script>
+function toggle_legend() {
+	if (document.getElementById('legend_switch').checked) {
+		document.getElementById('legend_pane').style.display = null;
+		document.getElementById('nolegend_pane').style.display = 'none';
+	} else {
+		document.getElementById('legend_pane').style.display = 'none';
+		document.getElementById('nolegend_pane').style.display = null;
+	};
+};
+</script>
+
+<div class="tab-content">
+
+<div id="nolegend_pane" style="display:none">
+<table style="width:100%; margin:10px">
 	<tr>
 		<th>Name</th>
-		<th>Type</th>
-		<th>Comment</th>
 	</tr>
 	<tr>
-		<td style="font-weight: bold">{{ form.name }}</td>
-		<td>{{ form.type }}</td>
-		<td>{{ form.comment }}</td>
+		<td>
+		{{ form.name }}
+		</td>
 	</tr>
 </table>
-<table style="width:100%; table-layout: fixed; margin:10px">
+</div>
+
+<div id="legend_pane">
+<table style="width:100%; margin:10px">
 	<tr>
-		<th>Legend Description</th>
-		<th>Legend Symbol</th>
-		<th></th>
+		<th>Symbol</th>
+		<th>Name</th>
 	</tr>
 	<tr>
+		<td>
+			<input id="id_legend_symbol" name="legend_symbol" value="{{ layer.legend_symbol|safe }}" type="hidden">
+			<script>
+				// see example:
+				// https://northlandia.wordpress.com/2015/03/27/leaflet-draw-implementing-custom-tools/
+				
+				var map = window.map;
+				
+				function drawsymbol_start(){
+					//alert('drawsymbol start');
+					var stopclick = false; //to prevent more than one click listener
+					var rect = new L.Draw.Rectangle(map, {shapeOptions: {
+																showArea: true,
+																color: '#FFF'
+																}
+															}
+														);
+					rect.enable();
+					map.on('draw:created', drawsymbol_create);
+				};
+				
+				function drawsymbol_edit(){
+					//alert('drawsymbol edit');
+					// first delete existing
+					// ...
+					drawsymbol_start();
+				};
+				
+				function drawsymbol_create(e){
+					//alert('drawsymbol create');
+					drawsymbol_finish(e);
+				};
+				
+				function drawsymbol_finish(e){
+					//alert('drawsymbol finish');
+					var data = e.layer.toGeoJSON();
+					document.getElementById("id_legend_symbol").value = JSON.stringify(data);
+					map.off('draw:created', drawsymbol_create);
+					drawsymbol_update_buttons();
+				};
+				
+				function drawsymbol_update_buttons(){
+					//alert('drawsymbol update buttons');
+					var drawbut = document.getElementById("id_legend_symbol_drawbut");
+					var editbut = document.getElementById("id_legend_symbol_editbut");
+					if (document.getElementById("id_legend_symbol").value) {
+						drawbut.style.display = 'none';
+						editbut.style.display = null;
+					} else {
+						drawbut.style.display = null;
+						editbut.style.display = 'none';
+					};
+				};
+			</script>
+			
+			<button id="id_legend_symbol_editbut" type="button" onclick="drawsymbol_edit();" style="{% if layer.legend_symbol %}{% else %}display:none{% endif %}">
+			<img height="30px" src="https://whichpad.com/wp-content/uploads/2019/11/def.png">
+			</button>
+			
+			<button id="id_legend_symbol_drawbut" type="button" onclick="drawsymbol_start();" style="{% if layer.legend_symbol %}display:none{% else %}{% endif %}">
+			<img height="30px" src="https://whichpad.com/wp-content/uploads/2019/11/def.png">
+			</button>
+		</td>
+		
 		<td>
 			<p id="id_legend_description_display_block" style="display:none">
 				<button id="id_legend_description_display" type="button" class="btn btn-link">
@@ -524,76 +626,15 @@
 				document.getElementById("id_legend_description_display").addEventListener("click", edit_legend_description);
 			</script>
 			<div id="id_legend_description_buttons">
-				<button type="button" onclick="drawtext_start(new_legend_description);"><img height="20px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button>
-				<button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);"><img height="20px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button>
+				<button type="button" onclick="drawtext_start(new_legend_description);"><img height="25px" src="https://i.ya-webdesign.com/images/how-to-add-text-to-a-png-image-11.png"></button>
+				<button type="button" onclick="selecttext_start(window.textlyr, select_legend_description);"><img height="25px" src="https://icons.iconarchive.com/icons/iconsmind/outline/512/Cursor-Select-icon.png"></button>
 			</div>
 		</td>
-		<td>
-			<input id="id_legend_symbol" name="legend_symbol" value="{{ layer.legend_symbol|safe }}" type="hidden">
-			<script>
-				// see example:
-				// https://northlandia.wordpress.com/2015/03/27/leaflet-draw-implementing-custom-tools/
-				
-				var map = window.map;
-				
-				function drawsymbol_start(){
-					//alert('drawsymbol start');
-					var stopclick = false; //to prevent more than one click listener
-					var rect = new L.Draw.Rectangle(map, {shapeOptions: {
-																showArea: true,
-																color: '#FFF'
-																}
-															}
-														);
-					rect.enable();
-					map.on('draw:created', drawsymbol_create);
-				};
-				
-				function drawsymbol_edit(){
-					//alert('drawsymbol edit');
-					// first delete existing
-					// ...
-					drawsymbol_start();
-				};
-				
-				function drawsymbol_create(e){
-					//alert('drawsymbol create');
-					drawsymbol_finish(e);
-				};
-				
-				function drawsymbol_finish(e){
-					//alert('drawsymbol finish');
-					var data = e.layer.toGeoJSON();
-					document.getElementById("id_legend_symbol").value = JSON.stringify(data);
-					map.off('draw:created', drawsymbol_create);
-					drawsymbol_update_buttons();
-				};
-				
-				function drawsymbol_update_buttons(){
-					//alert('drawsymbol update buttons');
-					var drawbut = document.getElementById("id_legend_symbol_drawbut");
-					var editbut = document.getElementById("id_legend_symbol_editbut");
-					if (document.getElementById("id_legend_symbol").value) {
-						drawbut.style.display = 'none';
-						editbut.style.display = null;
-					} else {
-						drawbut.style.display = null;
-						editbut.style.display = 'none';
-					};
-				};
-			</script>
-			
-			<button id="id_legend_symbol_editbut" type="button" onclick="drawsymbol_edit();" style="{% if layer.legend_symbol %}{% else %}display:none{% endif %}">
-			Edit
-			</button>
-			
-			<button id="id_legend_symbol_drawbut" type="button" onclick="drawsymbol_start();" style="{% if layer.legend_symbol %}display:none{% else %}{% endif %}">
-			Draw
-			</button>
-		</td>
-		<td></td>
 	</tr>
 </table>
+</div>
+
+</div>
 
 <script>
 	var map = window.map;
@@ -646,15 +687,14 @@
 	<tr>
 		<th>Digitizing</th>
 		<th></th>
-		<th></th>
 	</tr>
 	<tr>
 		<td>
 			<button type="button" onclick="drawgeom_start(new_feature)">New Feature</button>
+		</td>
+		<td>
 			<button type="button" onclick="editgeom_start(replace_feature);">Edit</button>
 		</td>
-		<td></td>
-		<td></td>
 	</tr>
 </table>
 <div style="text-align:right">
@@ -679,7 +719,7 @@
 </form>
 </div>
 
-<div id="map_div">
+<div id="map_div" style="width:70%">
 	{% block extra_assets %}
 	  {% leaflet_css %}
 	  {% leaflet_js %}
@@ -756,7 +796,7 @@
 	
 	<style>
     .leaflet-container {  /* all maps */
-        height: 600px;
+        //height: 600px;
     }
 	</style>
 

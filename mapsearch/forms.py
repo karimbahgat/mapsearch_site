@@ -14,6 +14,6 @@ class LayerForm(ModelForm):
         exclude = []
         widgets = {
             'legend_symbol': forms.Textarea(attrs={'rows':3, 'cols':20}),
-            'name': forms.Textarea(attrs={'rows':3, 'cols':20}),
+            'name': forms.TextInput(), #Textarea(attrs={'rows':3, 'cols':20}),
             'comment': forms.Textarea(attrs={'rows':3, 'cols':20}),
         }
